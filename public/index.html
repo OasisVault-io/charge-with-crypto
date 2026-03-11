@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Charge With Crypto</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body class="demo-page">
+    <main class="demo-shell">
+      <section class="demo-panel">
+        <div class="demo-panel-head">
+          <span class="eyebrow">Open source crypto checkout demo</span>
+          <h1>Test Charge With Crypto with your own receiving address.</h1>
+          <p class="muted">Enter a wallet address, choose an amount, generate a hosted checkout, and test the payment flow. Switch to an implementation example below to see how the same engine can be skinned.</p>
+        </div>
+
+        <form id="demoCheckoutForm" class="demo-form">
+          <div class="field-stack">
+            <label>
+              Receiving address
+              <input id="demoRecipient" placeholder="0x..." required />
+            </label>
+            <div class="field-grid">
+              <label>
+                Amount USD
+                <input id="demoAmount" type="number" min="0.5" step="0.01" value="5.00" required />
+              </label>
+              <label>
+                Checkout title
+                <input id="demoTitle" value="Charge with Crypto test payment" />
+              </label>
+            </div>
+            <label>
+              Description
+              <textarea id="demoDescription">Connect a wallet, review the best route, and pay in one confirmation.</textarea>
+            </label>
+          </div>
+
+          <div class="demo-implementation">
+            <div class="demo-implementation-head">
+              <span class="eyebrow">Implementation examples</span>
+              <p class="muted">Default is the neutral centered checkout. Click an example to preview that implementation style.</p>
+            </div>
+            <div class="demo-example-list">
+              <button type="button" class="demo-example-card is-active" data-template="neutral">
+                <span class="demo-example-kicker">Default</span>
+                <strong>Neutral demo</strong>
+                <span class="muted">Centered checkout box with neutral Charge With Crypto branding.</span>
+              </button>
+              <button type="button" class="demo-example-card" data-template="oasis">
+                <span class="demo-example-kicker">Example</span>
+                <strong>OasisVault</strong>
+                <span class="muted">Brand-heavy implementation using the OasisVault layout and palette.</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="row demo-actions">
+            <button type="submit" class="primary-button">Create test checkout</button>
+            <a class="secondary-button" href="/dashboard.html?merchantId=merchant_demo">Open dashboard</a>
+          </div>
+
+          <div id="demoStatus" class="muted"></div>
+        </form>
+      </section>
+    </main>
+
+    <script src="/index.js"></script>
+  </body>
+</html>

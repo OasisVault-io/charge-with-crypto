@@ -1,0 +1,57 @@
+{
+  "chains": {
+    "ethereum": {
+      "chainId": 1,
+      "name": "Ethereum",
+      "nativeAsset": "ETH",
+      "rpcUrlEnv": "RPC_ETHEREUM"
+    },
+    "base": {
+      "chainId": 8453,
+      "name": "Base",
+      "nativeAsset": "ETH",
+      "rpcUrlEnv": "RPC_BASE"
+    },
+    "arbitrum": {
+      "chainId": 42161,
+      "name": "Arbitrum One",
+      "nativeAsset": "ETH",
+      "rpcUrlEnv": "RPC_ARBITRUM"
+    },
+    "polygon": {
+      "chainId": 137,
+      "name": "Polygon",
+      "nativeAsset": "ETH",
+      "rpcUrlEnv": "RPC_POLYGON"
+    }
+  },
+  "assets": {
+    "ETH": {
+      "symbol": "ETH",
+      "decimals": 18,
+      "type": "native"
+    },
+    "USDC": {
+      "symbol": "USDC",
+      "decimals": 6,
+      "type": "erc20",
+      "addresses": {
+        "ethereum": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "base": "0x833589fCD6EDB6E08f4c7C32D4f71b54bdA02913",
+        "arbitrum": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+        "polygon": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359"
+      }
+    },
+    "USDT": {
+      "symbol": "USDT",
+      "decimals": 6,
+      "type": "erc20",
+      "addresses": {
+        "ethereum": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "base": "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+        "arbitrum": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+        "polygon": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
+      }
+    }
+  }
+}
