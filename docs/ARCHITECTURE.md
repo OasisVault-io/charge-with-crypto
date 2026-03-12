@@ -1,17 +1,18 @@
 # Charge With Crypto Architecture
 
 ## components
-- `src/server.js`: http server, static file serving, api entrypoint.
-- `src/routes/api.js`: checkout, merchant, and manual payment routes.
-- `src/store/sqliteStore.js`: sqlite persistence using `node:sqlite`.
-- `src/services/quoteService.js`: quote creation and expiry enforcement.
-- `src/services/balanceService.js`: rpc-backed wallet balance scanning across supported `chain + asset` routes.
-- `src/services/provider.js`: onchain provider interface and registry.
-- `src/services/evmVerifier.js`: evm rpc verification for native and erc20 transfers.
-- `src/services/paymentService.js`: payment confirmation and event creation.
-- `src/services/manualPaymentService.js`: deterministic manual deposit derivation, onchain transfer detection, and sweep orchestration.
-- `src/services/merchantWebhookService.js`: webhook based checkout resolution from a merchant reference id.
-- `src/services/webhookService.js`: signed webhook delivery and delivery logging.
+- `src/server.ts`: backend http server and api entrypoint. In production it serves the built Vite client from `dist/client`.
+- `client/*.html` + `client/*.ts`: Vite multi-page frontend entries for home, checkout, and dashboard.
+- `src/routes/api.ts`: checkout, merchant, and manual payment routes.
+- `src/store/sqliteStore.ts`: sqlite persistence using `node:sqlite`.
+- `src/services/quoteService.ts`: quote creation and expiry enforcement.
+- `src/services/balanceService.ts`: rpc-backed wallet balance scanning across supported `chain + asset` routes.
+- `src/services/provider.ts`: onchain provider interface and registry.
+- `src/services/evmVerifier.ts`: evm rpc verification for native and erc20 transfers.
+- `src/services/paymentService.ts`: payment confirmation and event creation.
+- `src/services/manualPaymentService.ts`: deterministic manual deposit derivation, onchain transfer detection, and sweep orchestration.
+- `src/services/merchantWebhookService.ts`: webhook based checkout resolution from a merchant reference id.
+- `src/services/webhookService.ts`: signed webhook delivery and delivery logging.
 
 ## checkout architecture
 1. checkout is created with merchant settlement addresses in `recipientByChain`.

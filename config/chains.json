@@ -1,5 +1,10 @@
 {
   "chains": {
+    "bitcoin": {
+      "name": "Bitcoin",
+      "network": "mainnet",
+      "nativeAsset": "BTC"
+    },
     "ethereum": {
       "chainId": 1,
       "name": "Ethereum",
@@ -26,6 +31,11 @@
     }
   },
   "assets": {
+    "BTC": {
+      "symbol": "BTC",
+      "decimals": 8,
+      "type": "native"
+    },
     "ETH": {
       "symbol": "ETH",
       "decimals": 18,

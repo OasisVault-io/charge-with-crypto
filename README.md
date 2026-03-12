@@ -36,10 +36,21 @@ not included:
 ```bash
 cp .env.example .env
 # fill in RPC_ETHEREUM, RPC_BASE, RPC_ARBITRUM, RPC_POLYGON
-node src/server.js
+npm install
+npm run build
+npm start
 ```
 
 open `http://localhost:3000`.
+
+## development
+```bash
+npm install
+npm run dev
+```
+
+- vite serves the frontend on `http://127.0.0.1:5173`
+- the api server runs from `src/server.ts` on the configured backend port
 
 ## local demo flow
 1. create a checkout in the dashboard.
@@ -112,7 +123,7 @@ manual pay is only exposed for fixed stablecoin routes on chains that the mercha
 
 ## test
 ```bash
-node --test
+npm test
 ```
 
 ## deployment notes

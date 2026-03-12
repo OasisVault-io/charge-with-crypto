@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Charge With Crypto Dashboard</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body class="dashboard-page">
+    <div class="atmosphere atmosphere-a"></div>
+    <div class="atmosphere atmosphere-b"></div>
+
+    <main class="dashboard-shell">
+      <section id="dashboardAuthPanel" class="card dashboard-topbar" hidden>
+        <div class="stack-sm">
+          <span class="eyebrow">Editing locked</span>
+          <h1>Enter dashboard token to edit</h1>
+          <p class="muted">Dashboard data is public for the demo. Enter the configured token only if you need to change merchant settings.</p>
+        </div>
+        <form id="dashboardAuthForm" class="dashboard-auth-form">
+          <label>
+            Dashboard token
+            <input id="dashboardAuthToken" type="password" placeholder="dashboard token" />
+          </label>
+          <button type="submit" class="primary-button">Unlock dashboard</button>
+          <div id="dashboardAuthStatus" class="muted"></div>
+        </form>
+      </section>
+
+      <section class="card dashboard-topbar">
+        <div class="stack-sm">
+          <span class="eyebrow">Charge With Crypto</span>
+          <h1>Merchant dashboard</h1>
+          <p class="muted">Use the left menu to manage brand, plans, checkout creation, payments, and activity one section at a time.</p>
+        </div>
+        <div class="dashboard-actions">
+          <a class="link-button" href="/">Home</a>
+          <a class="secondary-button" href="/" target="_blank">Open deployed app</a>
+        </div>
+      </section>
+
+      <section class="dashboard-layout">
+        <aside class="card dashboard-nav">
+          <div class="dashboard-nav-label">Menu</div>
+          <div id="dashboardNavSummary" class="dashboard-nav-summary"></div>
+          <div class="dashboard-nav-section">
+            <div class="dashboard-nav-group-label">Setup</div>
+            <div class="dashboard-nav-group">
+              <button type="button" class="dashboard-nav-item" data-dashboard-section="overview">Overview</button>
+              <button type="button" class="dashboard-nav-item" data-dashboard-section="brand">Brand</button>
+              <button type="button" class="dashboard-nav-item" data-dashboard-section="settings">Webhooks & settlement</button>
+              <button type="button" class="dashboard-nav-item" data-dashboard-section="plans">Plans</button>
+            </div>
+          </div>
+          <div class="dashboard-nav-section">
+            <div class="dashboard-nav-group-label">Run</div>
+            <div class="dashboard-nav-group">
+              <button type="button" class="dashboard-nav-item" data-dashboard-section="checkout">Checkout</button>
+              <button type="button" class="dashboard-nav-item" data-dashboard-section="payments">Payments</button>
+              <button type="button" class="dashboard-nav-item" data-dashboard-section="activity">Activity</button>
+            </div>
+          </div>
+        </aside>
+
+        <div class="dashboard-main">
+          <section id="dashboardSectionOverview" class="card dashboard-panel">
+            <div class="panel-header">
+              <span class="eyebrow">Overview</span>
+              <h2>Merchant snapshot</h2>
+              <p class="muted">The quick view: what is configured, what is active, and where to jump next.</p>
+            </div>
+            <div class="stats-grid" id="statsGrid"></div>
+            <div id="overviewCards" class="overview-grid"></div>
+            <div id="overviewChecklist" class="overview-checklist"></div>
+            <div class="panel-header">
+              <span class="eyebrow">Recent</span>
+              <h2>Latest checkouts</h2>
+            </div>
+            <div id="overviewCheckoutList" class="list-stack muted">Loading…</div>
+          </section>
+
+          <form id="merchantForm" class="dashboard-form-wrap">
+            <section id="dashboardSectionBrand" class="card dashboard-panel" hidden>
+              <div class="panel-header">
+                <span class="eyebrow">Brand</span>
+                <h2>Brand and checkout copy</h2>
+                <p class="muted">Manage the customer-facing identity and messaging used in hosted checkout.</p>
+              </div>
+
+              <div class="field-stack">
+                <section class="dashboard-form-section">
+                  <div class="section-head">
+                    <div class="stack-sm">
+                      <span class="eyebrow">Identity</span>
+                      <h3>Logo and messaging</h3>
+                    </div>
+                    <div class="helper">What customers see on the checkout page.</div>
+                  </div>
+
+                  <div class="settings-columns">
+                    <div class="field-stack">
+                      <label>
+                        Display name
+                        <input id="merchantBrandName" placeholder="OasisVault" />
+                      </label>
+                      <label>
+                        Checkout headline
+                        <input id="merchantHeadline" placeholder="Fast wallet-first crypto checkout" />
+                      </label>
+                      <label>
+                        Checkout description
+                        <textarea id="merchantDescription" placeholder="Let customers connect a wallet and pay in one confirmation."></textarea>
+                      </label>
+                      <details class="dashboard-advanced">
+                        <summary>Advanced merchant fields</summary>
+                        <div class="dashboard-advanced-body">
+                          <label>
+                            Internal name
+                            <input id="merchantName" placeholder="merchant_demo" />
+                          </label>
+                          <label>
+                            Support email
+                            <input id="merchantSupportEmail" placeholder="payments@example.com" />
+                          </label>
+                        </div>
+                      </details>
+                    </div>
+
+                    <div class="field-stack">
+                      <div class="logo-uploader">
+                        <img id="merchantLogoPreview" class="logo-preview" src="/charge-with-crypto-mark.svg" alt="Merchant logo preview" />
+                        <label>
+                          Logo URL or uploaded image
+                          <input id="merchantLogoUrl" placeholder="https://example.com/logo.png" />
+                        </label>
+                        <label>
+                          Upload logo
+                          <input id="merchantLogoFile" type="file" accept="image/*" />
+                        </label>
+                        <div class="helper">Uploading stores a data URL so the logo can render directly in the checkout.</div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="dashboard-form-section">
+                  <div class="section-head">
+                    <div class="stack-sm">
+                      <span class="eyebrow">Preview</span>
+                      <h3>Checkout preview</h3>
+                    </div>
+                    <div class="helper">See the current merchant identity before saving.</div>
+                  </div>
+                  <div id="brandPreviewCard" class="brand-preview-card"></div>
+                </section>
+
+                <section class="dashboard-form-section">
+                  <div class="section-head">
+                    <div class="stack-sm">
+                      <span class="eyebrow">Defaults</span>
+                      <h3>Checkout defaults</h3>
+                    </div>
+                    <div class="helper">Used for direct sessions and as the starting point for stored plans.</div>
+                  </div>
+
+                  <div class="field-stack">
+                    <label>
+                      Default checkout rail
+                      <select id="merchantDefaultPaymentRail">
+                        <option value="evm">EVM</option>
+                        <option value="bitcoin">Bitcoin</option>
+                      </select>
+                    </label>
+                    <div>
+                      <div class="eyebrow">Enabled networks</div>
+                      <div id="merchantChains" class="checkbox-grid"></div>
+                    </div>
+                    <div>
+                      <div class="eyebrow">Accepted assets by default</div>
+                      <div id="merchantAssets" class="checkbox-grid"></div>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="row">
+                  <button type="submit" class="primary-button">Save brand settings</button>
+                </div>
+                <div id="merchantSaveStatus" class="muted"></div>
+              </div>
+            </section>
+
+            <section id="dashboardSectionSettings" class="card dashboard-panel" hidden>
+              <div class="panel-header">
+                <span class="eyebrow">Operations</span>
+                <h2>Webhooks and settlement</h2>
+                <p class="muted">Manage merchant webhook delivery, treasury settlement, and which networks allow manual pay.</p>
+              </div>
+
+              <div class="field-stack">
+                <section class="dashboard-form-section">
+                  <div class="section-head">
+                    <div class="stack-sm">
+                      <span class="eyebrow">Readiness</span>
+                      <h3>Operations summary</h3>
+                    </div>
+                    <div class="helper">Use this to spot missing webhook, settlement, or manual-pay setup before going live.</div>
+                  </div>
+                  <div id="operationsSummaryCard" class="dashboard-inline-result"></div>
+                </section>
+
+                <section class="dashboard-form-section">
+                  <div class="section-head">
+                    <div class="stack-sm">
+                      <span class="eyebrow">Webhook</span>
+                      <h3>Merchant webhook endpoint</h3>
+                    </div>
+                    <div class="helper">Charge With Crypto sends both `checkout.resolve` and `payment.confirmed` to this endpoint.</div>
+                  </div>
+
+                  <div class="field-stack">
+                    <label>
+                      Webhook URL
+                      <input id="merchantWebhookUrl" placeholder="https://merchant.app/api/charge-with-crypto" />
+                    </label>
+                    <label>
+                      Webhook secret
+                      <input id="merchantWebhookSecret" placeholder="whsec_xxx" />
+                    </label>
+                  </div>
+                </section>
+
+                <section class="dashboard-form-section">
+                  <div class="section-head">
+                    <div class="stack-sm">
+                      <span class="eyebrow">Manual pay</span>
+                      <h3>Deterministic deposit engine</h3>
+                    </div>
+                    <div class="helper">Manual pay assigns one derived EVM address per checkout and sweeps confirmed deposits back to the merchant treasury.</div>
+                  </div>
+                  <div id="manualEngineStatus" class="dashboard-inline-result"></div>
+                </section>
+
+                <section class="dashboard-form-section">
+                  <div class="section-head">
+                    <div class="stack-sm">
+                      <span class="eyebrow">Bitcoin</span>
+                      <h3>Checkout address derivation</h3>
+                    </div>
+                    <div class="helper">Add an xpub or zpub if you want one unique Bitcoin receive address per checkout and automatic manual-pay detection.</div>
+                  </div>
+                  <label>
+                    Bitcoin xpub / zpub
+                    <input id="merchantBitcoinXpub" placeholder="zpub... or xpub..." />
+                  </label>
+                </section>
+
+                <section class="dashboard-form-section">
+                  <div class="section-head">
+                    <div class="stack-sm">
+                      <span class="eyebrow">Settlement</span>
+                      <h3>Network routing</h3>
+                    </div>
+                    <div class="helper">Open a network only when you need to edit receiving addresses or enable manual pay there.</div>
+                  </div>
+                  <div id="merchantChainSettings" class="chain-settings-stack"></div>
+                </section>
+
+                <div class="row">
+                  <button type="submit" class="primary-button">Save webhooks and settlement</button>
+                </div>
+                <div id="merchantSettingsStatus" class="muted"></div>
+              </div>
+            </section>
+
+            <section id="dashboardSectionPlans" class="card dashboard-panel" hidden>
+              <div class="panel-header panel-header-inline">
+                <div class="stack-sm">
+                  <span class="eyebrow">Plans</span>
+                  <h2>Stored plans</h2>
+                  <p class="muted">Keep plans collapsed until needed. Open one to edit or add a new one.</p>
+                </div>
+                <button type="button" id="addPlanBtn" class="secondary-button">Add plan</button>
+              </div>
+              <div id="plansEditor" class="list-stack"></div>
+              <div class="row">
+                <button type="submit" class="primary-button">Save plans</button>
+              </div>
+              <div id="merchantPlansStatus" class="muted"></div>
+            </section>
+          </form>
+
+          <section id="dashboardSectionCheckout" class="card dashboard-panel" hidden>
+            <div class="panel-header">
+              <span class="eyebrow">Checkout</span>
+              <h2>Create or resolve a checkout</h2>
+              <p class="muted">Most sessions should come from a stored plan. Open custom overrides only when you need a one-off checkout.</p>
+            </div>
+
+            <form id="checkoutForm" class="field-stack">
+              <section class="dashboard-form-section compact-section">
+                <div class="field-grid checkout-plan-grid">
+                  <label>
+                    Stored plan
+                    <select id="checkoutPlanId"></select>
+                  </label>
+                  <label>
+                    Order ID
+                    <input id="checkoutOrderId" placeholder="order_123" />
+                  </label>
+                  <label>
+                    Reference ID for webhook resolve
+                    <input id="checkoutReferenceId" placeholder="sub_abc123" />
+                  </label>
+                </div>
+                <div id="checkoutPlanHelp" class="helper">Pick a stored plan for the normal flow, or open custom overrides for a one-off session.</div>
+                <div id="checkoutPlanSummary" class="dashboard-inline-result checkout-plan-summary" hidden></div>
+              </section>
+
+              <details id="checkoutOverrides" class="dashboard-form-section checkout-overrides">
+                <summary>
+                  <div class="stack-sm">
+                    <span class="eyebrow">Custom overrides</span>
+                    <h3>One-off checkout details</h3>
+                  </div>
+                  <span class="badge">Optional</span>
+                </summary>
+                <div class="checkout-overrides-body">
+                  <label>
+                    Product or plan title
+                    <input id="checkoutTitle" placeholder="Pro plan" />
+                  </label>
+                  <label>
+                    Description
+                    <textarea id="checkoutDescription" placeholder="Annual plan with instant access after payment."></textarea>
+                  </label>
+                  <div class="field-grid">
+                    <label>
+                      Payment rail
+                      <select id="checkoutPaymentRail">
+                        <option value="evm">EVM</option>
+                        <option value="bitcoin">Bitcoin</option>
+                      </select>
+                    </label>
+                    <label>
+                      Amount USD
+                      <input id="checkoutAmountUsd" type="number" min="0" step="0.01" placeholder="49.00" />
+                    </label>
+                    <label>
+                      Success URL
+                      <input id="checkoutSuccessUrl" placeholder="https://merchant.app/success" />
+                    </label>
+                  </div>
+                  <div class="field-grid">
+                    <label>
+                      Cancel URL
+                      <input id="checkoutCancelUrl" placeholder="https://merchant.app/cancel" />
+                    </label>
+                  </div>
+                  <div class="field-stack">
+                    <div>
+                      <div class="eyebrow">Networks for this checkout</div>
+                      <div id="checkoutChains" class="checkbox-grid"></div>
+                    </div>
+                    <div>
+                      <div class="eyebrow">Accepted assets for this checkout</div>
+                      <div id="checkoutAssets" class="checkbox-grid"></div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              <div class="row">
+                <button type="submit" class="primary-button">Create checkout</button>
+                <button type="button" id="resolveCheckoutBtn" class="secondary-button">Resolve via webhook</button>
+              </div>
+              <div id="createdCheckout" class="muted"></div>
+            </form>
+          </section>
+
+          <section id="dashboardSectionPayments" class="card dashboard-panel" hidden>
+            <div class="panel-header panel-header-inline">
+              <div class="stack-sm">
+                <span class="eyebrow">Payments</span>
+                <h2>User payments</h2>
+                <p class="muted">Track submitted and confirmed payments, then export the ledger when finance needs it.</p>
+              </div>
+              <button type="button" id="exportPaymentsBtn" class="secondary-button">Export CSV</button>
+            </div>
+            <div class="payments-toolbar">
+              <label class="payments-toolbar-search">
+                Search
+                <input id="paymentSearchInput" placeholder="Order, title, wallet, or tx hash" />
+              </label>
+              <label>
+                Status
+                <select id="paymentStatusFilter">
+                  <option value="all">All statuses</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </label>
+              <label>
+                Method
+                <select id="paymentMethodFilter">
+                  <option value="all">All methods</option>
+                  <option value="onchain">Wallet</option>
+                  <option value="manual">Manual pay</option>
+                </select>
+              </label>
+              <label>
+                Period
+                <select id="paymentRangeFilter">
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="90d">Last 90 days</option>
+                  <option value="all">All time</option>
+                </select>
+              </label>
+              <div id="paymentResultsMeta" class="payments-toolbar-meta muted"></div>
+            </div>
+            <div id="paymentList" class="list-stack muted">Loading…</div>
+          </section>
+
+          <section id="dashboardSectionActivity" class="dashboard-panel dashboard-activity-panel" hidden>
+            <div class="activity-grid">
+              <article class="card">
+                <div class="panel-header">
+                  <span class="eyebrow">Recent checkouts</span>
+                  <h2>Session activity</h2>
+                </div>
+                <div id="checkoutList" class="list-stack muted">Loading…</div>
+              </article>
+
+              <div class="field-stack">
+                <article class="card">
+                  <div class="panel-header">
+                    <span class="eyebrow">Events</span>
+                    <h2>Payment events</h2>
+                  </div>
+                  <div id="eventList" class="list-stack muted">Loading…</div>
+                </article>
+
+                <article class="card">
+                  <div class="panel-header">
+                    <span class="eyebrow">Webhook deliveries</span>
+                    <h2>Outbound logs</h2>
+                  </div>
+                  <div id="deliveryList" class="list-stack muted">Loading…</div>
+                </article>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/dashboard.ts"></script>
+  </body>
+</html>
