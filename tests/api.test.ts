@@ -23,7 +23,15 @@ async function invokeApi({ method, url, body, ctx, headers = {} }) {
     end(chunk) { raw = chunk ? String(chunk) : ''; }
   };
 
-  const handled = await handleApi(req, res, ctx);
+  let handled;
+  try {
+    handled = await handleApi(req, res, ctx);
+  } catch (err) {
+    if (!err?.statusCode) throw err;
+    statusCode = err.statusCode;
+    raw = JSON.stringify({ error: err.message, message: err.message });
+    handled = true;
+  }
   return { handled, statusCode, json: raw ? JSON.parse(raw) : null };
 }
 
@@ -161,7 +169,7 @@ test('checkout lifecycle works with idempotency, multi chain verification, and d
   const submit = await invokeApi({
     method: 'POST',
     url: `/api/checkouts/${created.json.checkout.id}/submit-tx`,
-    body: { txHash: '0x' + '1'.repeat(64), chain: 'base', asset: 'USDC' },
+    body: { txHash: '0x' + '1'.repeat(64), chain: 'base', asset: 'USDC', walletAddress: '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629' },
     ctx
   });
   assert.equal(submit.statusCode, 200);
@@ -174,6 +182,89 @@ test('checkout lifecycle works with idempotency, multi chain verification, and d
   assert.equal(status.json.checkout.status, 'paid');
   assert.equal(status.json.checkout.paidChain, 'base');
   assert.equal(status.json.quotes.length, 4);
+});
+
+test('same chain tx hash cannot be replayed across separate checkouts', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-api-replay-'));
+  const config = {
+    env: 'test',
+    port: 0,
+    baseUrl: 'http://127.0.0.1:0',
+    dataDir: dir,
+    quoteExpirySeconds: 120,
+    webhookTimeoutMs: 500,
+    webhookRetries: 1,
+    webhookBackoffMs: 1,
+    webhookSecretFallback: 'fallback',
+    minConfirmations: 1,
+    chains: {
+      base: { chainId: 8453, name: 'Base', nativeAsset: 'ETH', rpcUrlEnv: 'RPC_BASE' }
+    },
+    assets: {
+      USDC: {
+        symbol: 'USDC',
+        decimals: 6,
+        type: 'erc20',
+        addresses: {
+          base: '0x2345678901234567890123456789012345678901'
+        }
+      },
+      ETH: { symbol: 'ETH', decimals: 18, type: 'native' }
+    }
+  };
+
+  const store = new SqliteStore(dir);
+  ensureMerchantDefaults(store, config);
+  store.update('merchants', 'merchant_default', {
+    recipientAddresses: {
+      base: '0xa9c424d119323495c3260ef16c7813a1133cd84e'
+    },
+    enabledChains: ['base']
+  });
+
+  const providers = new ProviderRegistry();
+  providers.register('base', { verifyPayment: async ({ recipientAddress }) => ({ ok: true, reason: 'confirmed', confirmations: 2, recipientAddress }) });
+  const priceService = {
+    getAssetPrice: async () => ({ priceUsd: 1, priceMicros: 1000000, source: 'test', fetchedAt: new Date().toISOString() }),
+    quoteUsd: async () => ({ baseUnits: 1000000n, decimalAmount: '1', priceUsd: 1, priceMicros: 1000000, source: 'test', fetchedAt: new Date().toISOString() })
+  };
+  const ctx = { store, config, providers, priceService };
+
+  const checkoutA = await invokeApi({
+    method: 'POST',
+    url: '/api/checkouts',
+    body: { merchantId: 'merchant_default', orderId: 'order_replay_a', amountUsd: 1, asset: 'USDC', enabledChains: ['base'] },
+    ctx
+  });
+  const checkoutB = await invokeApi({
+    method: 'POST',
+    url: '/api/checkouts',
+    body: { merchantId: 'merchant_default', orderId: 'order_replay_b', amountUsd: 1, asset: 'USDC', enabledChains: ['base'] },
+    ctx
+  });
+
+  assert.equal(checkoutA.statusCode, 201);
+  assert.equal(checkoutB.statusCode, 201);
+
+  const txHash = '0x' + '8'.repeat(64);
+  const first = await invokeApi({
+    method: 'POST',
+    url: `/api/checkouts/${checkoutA.json.checkout.id}/submit-tx`,
+    body: { txHash, chain: 'base', asset: 'USDC', walletAddress: '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629' },
+    ctx
+  });
+  assert.equal(first.statusCode, 200);
+  assert.equal(first.json.payment.status, 'confirmed');
+
+  const replay = await invokeApi({
+    method: 'POST',
+    url: `/api/checkouts/${checkoutB.json.checkout.id}/submit-tx`,
+    body: { txHash, chain: 'base', asset: 'USDC', walletAddress: '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629' },
+    ctx
+  });
+  assert.equal(replay.statusCode, 409);
+  assert.equal(replay.json.error, 'tx hash already linked to another checkout');
+  assert.equal(store.getById('checkouts', checkoutB.json.checkout.id).status, 'pending');
 });
 
 test('dashboard routes stay public for reads but require dashboard token for edits', async () => {
@@ -225,15 +316,14 @@ test('dashboard routes stay public for reads but require dashboard token for edi
   assert.equal(unauth.json.merchant.id, 'merchant_default');
   assert.equal('webhookSecret' in unauth.json.merchant, false);
 
-  await assert.rejects(
-    invokeApi({
-      method: 'PATCH',
-      url: '/api/merchants/merchant_default',
-      body: { brandName: 'Blocked' },
-      ctx
-    }),
-    /dashboard_auth_required/
-  );
+  const blockedEdit = await invokeApi({
+    method: 'PATCH',
+    url: '/api/merchants/merchant_default',
+    body: { brandName: 'Blocked' },
+    ctx
+  });
+  assert.equal(blockedEdit.statusCode, 401);
+  assert.equal(blockedEdit.json.error, 'dashboard_auth_required');
 
   const authed = await invokeApi({
     method: 'GET',
@@ -253,6 +343,73 @@ test('dashboard routes stay public for reads but require dashboard token for edi
   });
   assert.equal(allowedEdit.statusCode, 200);
   assert.equal(allowedEdit.json.merchant.brandName, 'Editable Merchant');
+});
+
+test('production mode disables public direct checkout creation but still allows authenticated dashboard creation', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-api-production-'));
+  const config = {
+    env: 'production',
+    appMode: 'production',
+    port: 0,
+    baseUrl: 'http://127.0.0.1:0',
+    dataDir: dir,
+    quoteExpirySeconds: 120,
+    webhookTimeoutMs: 500,
+    webhookRetries: 1,
+    webhookBackoffMs: 1,
+    webhookSecretFallback: 'fallback',
+    dashboardToken: 'super-secret-token',
+    minConfirmations: 1,
+    chains: {
+      base: { chainId: 8453, name: 'Base', nativeAsset: 'ETH', rpcUrlEnv: 'RPC_BASE' }
+    },
+    assets: {
+      USDC: {
+        symbol: 'USDC',
+        decimals: 6,
+        type: 'erc20',
+        addresses: {
+          base: '0x2345678901234567890123456789012345678901'
+        }
+      },
+      ETH: { symbol: 'ETH', decimals: 18, type: 'native' }
+    }
+  };
+
+  const store = new SqliteStore(dir);
+  ensureMerchantDefaults(store, config);
+  store.update('merchants', 'merchant_default', {
+    recipientAddresses: {
+      base: '0xa9c424d119323495c3260ef16c7813a1133cd84e'
+    },
+    enabledChains: ['base']
+  });
+
+  const providers = new ProviderRegistry();
+  const priceService = {
+    getAssetPrice: async () => ({ priceUsd: 1, priceMicros: 1000000, source: 'test', fetchedAt: new Date().toISOString() }),
+    quoteUsd: async () => ({ baseUnits: 1000000n, decimalAmount: '1', priceUsd: 1, priceMicros: 1000000, source: 'test', fetchedAt: new Date().toISOString() })
+  };
+  const ctx = { store, config, providers, priceService };
+
+  const blocked = await invokeApi({
+    method: 'POST',
+    url: '/api/checkouts',
+    body: { merchantId: 'merchant_default', orderId: 'production_public_blocked', amountUsd: 1, asset: 'USDC', enabledChains: ['base'] },
+    ctx
+  });
+  assert.equal(blocked.statusCode, 403);
+  assert.equal(blocked.json.error, 'direct_checkout_creation_disabled');
+
+  const allowed = await invokeApi({
+    method: 'POST',
+    url: '/api/checkouts',
+    body: { merchantId: 'merchant_default', orderId: 'production_authed_allowed', amountUsd: 1, asset: 'USDC', enabledChains: ['base'] },
+    headers: { 'x-dashboard-token': 'super-secret-token' },
+    ctx
+  });
+  assert.equal(allowed.statusCode, 201);
+  assert.equal(allowed.json.checkout.orderId, 'production_authed_allowed');
 });
 
 test('status polling auto-confirms a previously submitted pending payment', async () => {
@@ -327,7 +484,7 @@ test('status polling auto-confirms a previously submitted pending payment', asyn
   const submit = await invokeApi({
     method: 'POST',
     url: `/api/checkouts/${created.json.checkout.id}/submit-tx`,
-    body: { txHash: '0x' + '2'.repeat(64), chain: 'base', asset: 'USDC' },
+    body: { txHash: '0x' + '2'.repeat(64), chain: 'base', asset: 'USDC', walletAddress: '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629' },
     ctx
   });
   assert.equal(submit.statusCode, 200);

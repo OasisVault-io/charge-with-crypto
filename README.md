@@ -19,6 +19,7 @@ included:
 - self hosted checkout + dashboard
 - quote creation and refresh
 - injected evm wallet pay flow
+- bitcoin checkout routes
 - wallet balance scan across enabled chains and accepted assets
 - manual tx submission and verification
 - webhook delivery with signed payloads
@@ -29,7 +30,6 @@ not included:
 - swaps, bridges, custody, subscriptions, refunds
 - merchant auth and multi user roles
 - dead letter queue
-- non evm chains
 - browser wallet support beyond injected evm providers
 
 ## run
@@ -51,6 +51,11 @@ npm run dev
 
 - vite serves the frontend on `http://127.0.0.1:5173`
 - the api server runs from `src/server.ts` on the configured backend port
+
+## deployment modes
+- `APP_MODE=demo`: keeps public checkout creation available for demo merchants and is what you should use for a public sandbox.
+- `APP_MODE=production`: disables unauthenticated `POST /api/checkouts`, requires a non-default `DASHBOARD_TOKEN`, and expects merchant integrations to create sessions through `POST /api/checkouts/resolve`.
+- the intended setup is one secure codebase with two deployments: a public demo in `demo` mode and merchant/self-hosted integrations in `production` mode.
 
 ## local demo flow
 1. create a checkout in the dashboard.
@@ -75,10 +80,12 @@ manual pay is only exposed for fixed stablecoin routes on chains that the mercha
 - manual pay is therefore optional and chain-specific. if you cannot secure the sweep keys, do not enable it.
 
 ## env
+- `APP_MODE`: `demo` or `production`. Defaults to `production` only when `NODE_ENV=production`, otherwise `demo`
 - `RPC_ETHEREUM`, `RPC_BASE`, `RPC_ARBITRUM`, `RPC_POLYGON`: required for real verification on each chain
 - `MIN_CONFIRMATIONS`: confirmation depth before marking paid
 - `QUOTE_EXPIRY_SECONDS`: quote ttl
 - `WEBHOOK_TIMEOUT_MS`, `WEBHOOK_RETRIES`, `WEBHOOK_BACKOFF_MS`: webhook delivery controls
+- `DASHBOARD_TOKEN`: required in `APP_MODE=production`
 - `MANUAL_PAYMENT_MNEMONIC`: root phrase used to derive one EVM deposit address per checkout
 - `MANUAL_PAYMENT_DERIVATION_PATH`: base derivation path, default `m/44'/60'/0'/0`
 - `MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY`: funded EVM key that tops up gas for derived deposit wallets before sweeping tokens
@@ -102,8 +109,11 @@ manual pay is only exposed for fixed stablecoin routes on chains that the mercha
 - `POST /api/wallet/connect-intent`
 - `GET /api/prices/:chain/:asset`
 
+`POST /api/checkouts` is for demo/admin flows. Real merchant integrations should use `POST /api/checkouts/resolve` from their backend.
+
 ## merchant integration
 - full merchant integration guide: [`docs/MERCHANT_INTEGRATION.md`](./docs/MERCHANT_INTEGRATION.md)
+- production launch checklist: [`docs/PRODUCTION_CHECKLIST.md`](./docs/PRODUCTION_CHECKLIST.md)
 - typical flow:
   1. configure merchant branding, plans, recipient addresses, `webhookUrl`, and `webhookSecret`
   2. your backend calls `POST /api/checkouts/resolve` with `merchantId`, `referenceId`, and optional `planId`
@@ -128,6 +138,7 @@ npm test
 
 ## deployment notes
 - this is fine for a single self hosted instance behind a reverse proxy
+- set `APP_MODE=production` for real merchant traffic and keep public demos on a separate `demo` deployment
 - use distinct rpc providers per chain and a strong webhook secret per merchant
 - back up the sqlite file under `DATA_DIR` (default local path: `data/chaincart.sqlite`)
 - fund the manual sweep sponsor wallet on every chain where manual pay is enabled

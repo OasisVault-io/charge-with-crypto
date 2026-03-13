@@ -38,6 +38,15 @@ const DEMO_MERCHANT_RECORD = {
   checkoutDescription: 'Enter a receiving address, create a checkout, and test the end-to-end payment flow.'
 };
 
+function configuredAppMode(config) {
+  const candidate = String(config?.appMode || (config?.env === 'production' ? 'production' : 'demo')).trim().toLowerCase();
+  return candidate === 'production' ? 'production' : 'demo';
+}
+
+function merchantAllowsPublicCheckout(merchant) {
+  return Boolean(merchant?.publicCheckoutAllowed);
+}
+
 function merchantSupportsChain(merchant, chain) {
   if (chain === 'bitcoin') return Boolean(merchant?.recipientAddresses?.bitcoin || merchant?.bitcoinXpub);
   return Boolean(merchant?.recipientAddresses?.[chain]);
@@ -62,11 +71,13 @@ function ensureMerchantDefaults(store, config) {
   const merchantDefinitions = [
     {
       record: DEFAULT_MERCHANT_RECORD,
-      webhookUrl: 'mock://webhook/merchant_default'
+      webhookUrl: 'mock://webhook/merchant_default',
+      publicCheckoutAllowed: true
     },
     {
       record: DEMO_MERCHANT_RECORD,
-      webhookUrl: 'mock://webhook/merchant_demo'
+      webhookUrl: 'mock://webhook/merchant_demo',
+      publicCheckoutAllowed: true
     }
   ];
 
@@ -82,7 +93,8 @@ function ensureMerchantDefaults(store, config) {
         enabledChains: Object.keys(config.chains),
         manualPaymentEnabledChains: Object.keys(config.chains),
         plans: DEFAULT_MERCHANT_PLANS.filter((plan) => plan.enabledChains.every((chain) => config.chains[chain])),
-        defaultAcceptedAssets: DEFAULT_ACCEPTED_ASSETS.filter((asset) => config.assets[asset])
+        defaultAcceptedAssets: DEFAULT_ACCEPTED_ASSETS.filter((asset) => config.assets[asset]),
+        publicCheckoutAllowed: definition.publicCheckoutAllowed
       });
       continue;
     }
@@ -100,6 +112,7 @@ function ensureMerchantDefaults(store, config) {
     if (!Array.isArray(existing.plans)) patch.plans = DEFAULT_MERCHANT_PLANS.filter((plan) => plan.enabledChains.every((chain) => config.chains[chain]));
     if (!existing.checkoutHeadline) patch.checkoutHeadline = definition.record.checkoutHeadline;
     if (!existing.checkoutDescription) patch.checkoutDescription = definition.record.checkoutDescription;
+    if (typeof existing.publicCheckoutAllowed !== 'boolean') patch.publicCheckoutAllowed = definition.publicCheckoutAllowed;
     if (!existing.enabledChains?.length && existing.recipientAddresses) {
       patch.enabledChains = Object.keys(config.chains).filter((chain) => existing.recipientAddresses?.[chain]);
     }
@@ -136,9 +149,48 @@ function requireDashboardAuth(req, config) {
 }
 
 function dashboardRequestAuthenticated(req, config) {
-  if (!config.dashboardToken) return true;
+  if (!config.dashboardToken) return false;
   const provided = String(reqHeader(req, 'x-dashboard-token') || '');
   return Boolean(provided && provided === config.dashboardToken);
+}
+
+function directCheckoutAccess({ req, config, merchant, body }) {
+  const authenticated = Boolean(config.dashboardToken) && dashboardRequestAuthenticated(req, config);
+  if (configuredAppMode(config) === 'production') {
+    if (authenticated) return null;
+    return {
+      status: 403,
+      body: {
+        error: 'direct_checkout_creation_disabled',
+        message: 'Public checkout creation is disabled in production mode. Use POST /api/checkouts/resolve or authenticate the dashboard request.'
+      }
+    };
+  }
+
+  if (authenticated) return null;
+  if (!merchantAllowsPublicCheckout(merchant)) {
+    return {
+      status: 403,
+      body: {
+        error: 'public_checkout_unavailable',
+        message: 'This merchant does not allow unauthenticated public checkout creation.'
+      }
+    };
+  }
+
+  const blockedField = ['referenceId', 'successUrl', 'cancelUrl']
+    .find((field) => body?.[field] != null && body[field] !== '');
+  if (blockedField) {
+    return {
+      status: 400,
+      body: {
+        error: `${blockedField}_not_allowed_in_public_demo`,
+        message: `${blockedField} is not available for public demo checkout creation.`
+      }
+    };
+  }
+
+  return null;
 }
 
 function normalizeUrlValue(value, field, options) {
@@ -406,6 +458,7 @@ function normalizeMerchantPayload({ body, merchant, config, nextAddresses, nextB
   if (body.supportEmail != null) payload.supportEmail = requireOptionalString(body.supportEmail, 'supportEmail', { max: 160 });
   if (body.checkoutHeadline != null) payload.checkoutHeadline = requireOptionalString(body.checkoutHeadline, 'checkoutHeadline', { max: 120 });
   if (body.checkoutDescription != null) payload.checkoutDescription = requireOptionalString(body.checkoutDescription, 'checkoutDescription', { max: 240 });
+  if (body.publicCheckoutAllowed != null) payload.publicCheckoutAllowed = Boolean(body.publicCheckoutAllowed);
   if (body.defaultPaymentRail != null || body.paymentRail != null) {
     payload.defaultPaymentRail = derivePaymentRail({
       body: { paymentRail: body.defaultPaymentRail || body.paymentRail },
@@ -469,6 +522,7 @@ async function createCheckoutResponse({ store, config, priceService, manualPayme
   };
 
   const amountUsd = Number((normalizeUsdCents(checkoutInput.amountUsd || 0) / 100).toFixed(2));
+  if (amountUsd <= 0) return { status: 400, body: { error: 'amountUsd must be greater than zero' } };
   const paymentRail = derivePaymentRail({
     body: checkoutInput,
     fallback: plan?.paymentRail || merchant.defaultPaymentRail || 'evm',
@@ -577,6 +631,7 @@ async function handleApi(req, res, ctx) {
       ok: true,
       name: 'charge-with-crypto',
       env: config.env,
+      appMode: configuredAppMode(config),
       rpcConfigured: rpc,
       storage: 'sqlite',
       manualPaymentConfigured: Boolean(manualPaymentService?.isConfigured())
@@ -585,6 +640,7 @@ async function handleApi(req, res, ctx) {
 
   if (req.method === 'GET' && path === '/api/config') {
     return sendJson(res, 200, {
+      appMode: configuredAppMode(config),
       chains: config.chains,
       assets: config.assets,
       fixedPriceAssets: Object.keys(config.assets).filter((asset) => isFixedPegAsset(asset)),
@@ -628,6 +684,7 @@ async function handleApi(req, res, ctx) {
       webhookSecret: requireOptionalString(body.webhookSecret, 'webhookSecret', { max: 240 }) || randomId('whsec'),
       recipientAddresses,
       bitcoinXpub,
+      publicCheckoutAllowed: Boolean(body.publicCheckoutAllowed),
       enabledChains,
       manualPaymentEnabledChains: normalizeManualPaymentEnabledChains(body.manualPaymentEnabledChains || enabledChains, config, { recipientAddresses, bitcoinXpub }),
       plans: normalizePlans(body.plans || [], config),
@@ -692,6 +749,11 @@ async function handleApi(req, res, ctx) {
       if (cached) return sendJson(res, 200, { ...cached, idempotentReplay: true });
     }
     const body = await parseJsonBody(req);
+    const merchantId = body.merchantId || DEFAULT_MERCHANT_ID;
+    const merchant = store.getById('merchants', merchantId);
+    if (!merchant) return sendJson(res, 404, { error: 'merchant not found' });
+    const access = directCheckoutAccess({ req, config, merchant, body });
+    if (access) return sendJson(res, access.status, access.body);
     const created = await createCheckoutResponse({ store, config, priceService, manualPaymentService, bitcoinAddressService, body });
     if (key) saveIdempotentResponse(store, key, 'checkout:create', created.body);
     return sendJson(res, created.status, created.body);
@@ -803,6 +865,9 @@ async function handleApi(req, res, ctx) {
         return sendJson(res, 409, { error: 'payment_window_expired', message: 'Payment window expired. Refresh prices to continue.' });
       }
       return sendJson(res, 400, { error: 'quote missing for selected route' });
+    }
+    if (quote.chain !== 'bitcoin' && !requireOptionalString(body.walletAddress, 'walletAddress', { max: 128 })) {
+      return sendJson(res, 400, { error: 'walletAddress is required for evm submit-tx' });
     }
 
     const result = await verifyPaymentAndRecord({ store, providers, config, checkout, quote, chain: quote.chain, txHash: body.txHash, walletAddress: body.walletAddress });

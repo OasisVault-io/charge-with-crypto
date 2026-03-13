@@ -2,6 +2,10 @@
 
 This is the contract your product team integrates against.
 
+Use this guide for `APP_MODE=production`.
+
+Do not integrate real merchant traffic against public `POST /api/checkouts`. That route is intended for demo/admin flows and is blocked for unauthenticated callers in production mode.
+
 The intended merchant flow is:
 
 1. Merchant configures plans, recipient addresses, webhook URL, and webhook secret in the dashboard.
@@ -16,6 +20,8 @@ The intended merchant flow is:
 
 Before integration, configure:
 
+- `APP_MODE=production`
+- `DASHBOARD_TOKEN`
 - `webhookUrl`
 - `webhookSecret`
 - branding

@@ -27,8 +27,25 @@ loadEnv(path.join(projectRoot, '.env'));
 const chainsConfigPath = path.join(projectRoot, 'config', 'chains.json');
 const chainsConfig = JSON.parse(fs.readFileSync(chainsConfigPath, 'utf8'));
 
+function normalizeAppMode(value, env = 'development') {
+  const fallback = env === 'production' ? 'production' : 'demo';
+  const candidate = String(value || fallback).trim().toLowerCase();
+  return candidate === 'production' ? 'production' : 'demo';
+}
+
+function validateRuntimeConfig(input) {
+  const appMode = normalizeAppMode(input?.appMode, input?.env || 'development');
+  if (appMode !== 'production') return;
+
+  const dashboardToken = String(input?.dashboardToken || '').trim();
+  if (!dashboardToken || dashboardToken === 'change_me_before_public_deploy') {
+    throw new Error('DASHBOARD_TOKEN must be set to a non-default value when APP_MODE=production');
+  }
+}
+
 const config = {
   env: process.env.NODE_ENV || 'development',
+  appMode: normalizeAppMode(process.env.APP_MODE, process.env.NODE_ENV || 'development'),
   port: Number(process.env.PORT || 3000),
   baseUrl: process.env.BASE_URL || 'http://localhost:3000',
   dataDir: process.env.DATA_DIR || path.join(projectRoot, 'data'),
@@ -50,4 +67,6 @@ const config = {
   assets: chainsConfig.assets
 };
 
-module.exports = { config, projectRoot };
+validateRuntimeConfig(config);
+
+module.exports = { config, projectRoot, normalizeAppMode, validateRuntimeConfig };

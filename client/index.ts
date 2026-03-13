@@ -4,8 +4,11 @@ const form = document.getElementById('demoCheckoutForm');
 const statusNode = document.getElementById('demoStatus');
 const titleInput = document.getElementById('demoTitle');
 const descriptionInput = document.getElementById('demoDescription');
+const submitButton = form?.querySelector('button[type="submit"]');
+const interactiveNodes = form ? [...form.querySelectorAll('input, textarea, button')] : [];
 
 let selectedTemplate = 'neutral';
+let appMode = 'demo';
 
 function persistCheckoutBootstrap(payload) {
   const checkoutId = payload?.checkout?.id;
@@ -41,9 +44,37 @@ function markEdited(event) {
   event.target.dataset.userEdited = 'true';
 }
 
+function setStatus(message) {
+  statusNode.textContent = message || '';
+}
+
+function setFormDisabled(disabled) {
+  interactiveNodes.forEach((node) => {
+    if (node.id === 'demoStatus') return;
+    if ('disabled' in node) node.disabled = disabled;
+  });
+}
+
+async function loadRuntimeConfig() {
+  const response = await fetch('/api/config');
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
+
+  appMode = payload.appMode === 'production' ? 'production' : 'demo';
+  if (appMode === 'production') {
+    setFormDisabled(true);
+    setStatus('Public demo checkout creation is disabled in production mode. Use POST /api/checkouts/resolve from your backend or create a checkout from an authenticated dashboard request.');
+    if (submitButton) submitButton.textContent = 'Demo disabled in production';
+  }
+}
+
 async function createDemoCheckout(event) {
   event.preventDefault();
-  statusNode.textContent = '';
+  setStatus('');
+
+  if (appMode === 'production') {
+    throw new Error('Public demo checkout creation is disabled in production mode.');
+  }
 
   const recipient = document.getElementById('demoRecipient').value.trim();
   const amountUsd = Number(document.getElementById('demoAmount').value);
@@ -90,8 +121,11 @@ titleInput.addEventListener('input', markEdited);
 descriptionInput.addEventListener('input', markEdited);
 form.addEventListener('submit', (event) => {
   createDemoCheckout(event).catch((error) => {
-    statusNode.textContent = error.message;
+    setStatus(error.message);
   });
 });
 
 setTemplate(selectedTemplate);
+loadRuntimeConfig().catch((error) => {
+  setStatus(error.message);
+});

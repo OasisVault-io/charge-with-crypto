@@ -45,6 +45,7 @@ test('erc20 verification matches the canonical transfer topic and confirms recip
 
       if (method === 'eth_getTransactionByHash') {
         return {
+          from: '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629',
           to: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
           value: '0x0'
         };
@@ -60,6 +61,7 @@ test('erc20 verification matches the canonical transfer topic and confirms recip
 
   const verification = await verifier.verifyPayment({
     txHash: '0xa997d5a5e26a7ffcc73f55f9af3226a512cf2be2df244635fc961eb409cd4740',
+    walletAddress: '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629',
     expectedAmountBaseUnits: '5000000',
     expectedAsset: 'USDC',
     recipientAddress: '0xa0400933060322cAE0C23B94E2b7cAE0d9D0168b'
@@ -69,4 +71,65 @@ test('erc20 verification matches the canonical transfer topic and confirms recip
   assert.equal(verification.reason, 'confirmed');
   assert.equal(verification.observedAmountBaseUnits, '5000000');
   assert.equal(verification.recipientAddress, '0xa0400933060322cae0c23b94e2b7cae0d9d0168b');
+  assert.equal(verification.senderAddress, '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629');
+});
+
+test('evm verification rejects a tx submitted from a different wallet', async () => {
+  const verifier = new EvmVerifier({
+    config: {
+      chains: {
+        base: { rpcUrlEnv: 'RPC_BASE' }
+      },
+      assets: {
+        USDC: {
+          type: 'erc20',
+          decimals: 6,
+          addresses: {
+            base: '0x833589fCD6EDB6E08f4c7C32D4f71b54bdA02913'
+          }
+        }
+      }
+    },
+    chain: 'base',
+    rpcUrl: 'http://localhost'
+  });
+
+  verifier.client = {
+    async call(method) {
+      if (method === 'eth_getTransactionReceipt') {
+        return {
+          status: '0x1',
+          blockNumber: '0x10',
+          logs: []
+        };
+      }
+
+      if (method === 'eth_getTransactionByHash') {
+        return {
+          from: '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629',
+          to: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+          value: '0x0'
+        };
+      }
+
+      if (method === 'eth_blockNumber') {
+        return '0x15';
+      }
+
+      throw new Error(`unexpected rpc method: ${method}`);
+    }
+  };
+
+  const verification = await verifier.verifyPayment({
+    txHash: '0xa997d5a5e26a7ffcc73f55f9af3226a512cf2be2df244635fc961eb409cd4740',
+    walletAddress: '0x1111111111111111111111111111111111111111',
+    expectedAmountBaseUnits: '5000000',
+    expectedAsset: 'USDC',
+    recipientAddress: '0xa0400933060322cAE0C23B94E2b7cAE0d9D0168b'
+  });
+
+  assert.equal(verification.ok, false);
+  assert.equal(verification.reason, 'wallet_mismatch');
+  assert.equal(verification.senderAddress, '0x7dd5be069f2d2ead75ec7c3423b116ff043c2629');
+  assert.equal(verification.expectedWalletAddress, '0x1111111111111111111111111111111111111111');
 });

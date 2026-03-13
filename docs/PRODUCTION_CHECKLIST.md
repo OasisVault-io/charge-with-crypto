@@ -1,0 +1,32 @@
+# Production Checklist
+
+Use this when you are integrating Charge With Crypto into a real merchant flow.
+
+## Required
+
+- Set `APP_MODE=production`.
+- Set `DASHBOARD_TOKEN` to a strong non-default value. Startup should fail if you do not.
+- Configure real RPC endpoints for every enabled chain.
+- Set a unique `WEBHOOK_SECRET` or merchant-specific `webhookSecret`.
+- Protect `MANUAL_PAYMENT_MNEMONIC` and `MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY` like treasury secrets if manual pay is enabled.
+
+## Integration
+
+- Call `POST /api/checkouts/resolve` from your backend.
+- Do not expose public `POST /api/checkouts` for real merchant traffic.
+- Verify `checkout.resolve` and `payment.confirmed` webhook signatures using the raw request body.
+- Keep your own stable `referenceId` or `planId` mapping so you can reconcile `payment.confirmed`.
+- Require customers to submit the wallet address they paid from for EVM `submit-tx` flows.
+
+## Demo Separation
+
+- Run any public sandbox or marketing demo with `APP_MODE=demo`.
+- Restrict demo mode to demo merchants only.
+- Do not reuse demo merchant ids, recipient addresses, or webhook endpoints for real orders.
+
+## Operations
+
+- Monitor webhook delivery failures and onchain verification errors.
+- Back up the SQLite database under `DATA_DIR`.
+- Fund the manual sweep sponsor wallet on every chain where manual pay is enabled.
+- Review enabled chains, accepted assets, and settlement addresses before going live.

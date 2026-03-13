@@ -22,6 +22,11 @@ function isChainTxHash(value, chain) {
   return isTxHash(value);
 }
 
+function normalizeChainTxHash(value, chain, field = 'txHash') {
+  if (!isChainTxHash(value, chain)) throw new Error(`invalid ${field}`);
+  return String(value).toLowerCase();
+}
+
 function requireAddress(value, field = 'address') {
   if (!isAddress(value)) throw new Error(`invalid ${field}`);
   return value;
@@ -73,6 +78,7 @@ module.exports = {
   isTxHash,
   isBitcoinTxHash,
   isChainTxHash,
+  normalizeChainTxHash,
   requireAddress,
   requireChainAddress,
   requireEnum,

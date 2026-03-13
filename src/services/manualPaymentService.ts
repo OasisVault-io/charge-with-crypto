@@ -330,19 +330,32 @@ class ManualPaymentService {
       return routeScore(a.quote) - routeScore(b.quote);
     })[0];
 
-    const payment = await recordManualDetectedPayment({
-      store: this.store,
-      config: this.config,
-      checkout,
-      quote: detected.quote,
-      txHash: detected.txHash,
-      walletAddress: detected.fromAddress,
-      recipientAddress: manualPayment.address,
-      observedAmountBaseUnits: detected.observedAmountBaseUnits.toString(),
-      tokenAddress: detected.tokenAddress,
-      blockNumber: detected.blockNumber,
-      confirmations: Math.max(1, latestBlock - detected.blockNumber + 1)
-    });
+    let payment;
+    try {
+      payment = await recordManualDetectedPayment({
+        store: this.store,
+        config: this.config,
+        checkout,
+        quote: detected.quote,
+        txHash: detected.txHash,
+        walletAddress: detected.fromAddress,
+        recipientAddress: manualPayment.address,
+        observedAmountBaseUnits: detected.observedAmountBaseUnits.toString(),
+        tokenAddress: detected.tokenAddress,
+        blockNumber: detected.blockNumber,
+        confirmations: Math.max(1, latestBlock - detected.blockNumber + 1)
+      });
+    } catch (err) {
+      this.store.update('checkouts', checkout.id, {
+        manualPayment: {
+          ...manualPayment,
+          scanState,
+          lastScanError: err.message,
+          lastScanAt: nowIso()
+        }
+      });
+      return this.store.getById('checkouts', checkout.id) || checkout;
+    }
 
     this.store.update('checkouts', checkout.id, {
       manualPayment: {
