@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // @ts-nocheck
 const http = require('node:http');
 const path = require('node:path');
-const { config, projectRoot } = require('./config');
+const { config, projectRoot, validateRuntimeConfig } = require('./config');
 const { SqliteStore } = require('./store/sqliteStore');
 const { ProviderRegistry } = require('./services/provider');
 const { EvmVerifier } = require('./services/evmVerifier');
@@ -18,6 +18,7 @@ const { CompositeManualPaymentService } = require('./services/compositeManualPay
 const { BitcoinAddressService } = require('./services/bitcoinAddressService');
 const clientDistDir = path.join(projectRoot, 'dist', 'client');
 function createApp(customConfig = config) {
+    validateRuntimeConfig(customConfig);
     const store = new SqliteStore(customConfig.dataDir);
     ensureMerchantDefaults(store, customConfig);
     const providers = new ProviderRegistry();

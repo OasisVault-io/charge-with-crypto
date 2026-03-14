@@ -35,6 +35,19 @@ class EvmVerifier extends OnchainProvider {
         if (confirmations < this.minConfirmations) {
             return { ok: false, reason: 'insufficient_confirmations', confirmations, minConfirmations: this.minConfirmations };
         }
+        const senderAddress = normalizeAddress(tx.from || '0x0000000000000000000000000000000000000000');
+        if (input.walletAddress) {
+            const expectedSender = normalizeAddress(input.walletAddress);
+            if (senderAddress !== expectedSender) {
+                return {
+                    ok: false,
+                    reason: 'wallet_mismatch',
+                    confirmations,
+                    senderAddress,
+                    expectedWalletAddress: expectedSender
+                };
+            }
+        }
         const expectedRecipient = normalizeAddress(input.recipientAddress);
         const assetConfig = this.config.assets[input.expectedAsset];
         if (assetConfig.type === 'native') {
@@ -46,6 +59,7 @@ class EvmVerifier extends OnchainProvider {
                 confirmations,
                 observedAmountBaseUnits: amount.toString(),
                 expectedAmountBaseUnits: expected.toString(),
+                senderAddress,
                 recipientAddress: to,
                 reason: to !== expectedRecipient ? 'recipient_mismatch' : amount < expected ? 'amount_too_low' : 'confirmed'
             };
@@ -63,6 +77,7 @@ class EvmVerifier extends OnchainProvider {
             confirmations,
             observedAmountBaseUnits: amount.toString(),
             expectedAmountBaseUnits: expected.toString(),
+            senderAddress,
             recipientAddress: expectedRecipient,
             tokenAddress,
             reason: amount < expected ? 'amount_too_low' : 'confirmed'

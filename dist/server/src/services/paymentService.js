@@ -3,7 +3,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // @ts-nocheck
 const { nowIso } = require('../utils/time');
 const { deliverWebhook } = require('./webhookService');
-const { isChainTxHash } = require('../utils/validation');
+const { normalizeChainTxHash } = require('../utils/validation');
+function paymentMatchesChainTxHash(payment, chain, txHash) {
+    return payment.chain === chain && String(payment.txHash || '').toLowerCase() === txHash;
+}
+function conflictingPaymentForTx({ store, checkoutId, chain, txHash }) {
+    return store.findOne('payments', (payment) => payment.checkoutId !== checkoutId &&
+        paymentMatchesChainTxHash(payment, chain, txHash));
+}
+function existingPaymentForCheckoutTx({ store, checkoutId, chain, txHash }) {
+    return store.findOne('payments', (payment) => payment.checkoutId === checkoutId &&
+        paymentMatchesChainTxHash(payment, chain, txHash));
+}
 async function emitPaymentConfirmed({ store, config, checkout, quote, payment, chain }) {
     const recipientAddress = checkout.recipientByChain?.[chain] || checkout.recipientAddress;
     const event = store.insert('events', {
@@ -61,12 +72,32 @@ async function verifyQuotePayment({ providers, quote, recipientAddress, txHash, 
     });
 }
 async function verifyPaymentAndRecord({ store, providers, config, checkout, quote, chain, txHash, walletAddress }) {
-    if (!isChainTxHash(txHash, quote?.chain || chain)) {
-        const err = new Error('invalid tx hash');
+    const txChain = quote?.chain || chain;
+    let normalizedTxHash;
+    try {
+        normalizedTxHash = normalizeChainTxHash(txHash, txChain);
+    }
+    catch (err) {
         err.statusCode = 400;
         throw err;
     }
-    const existing = store.findOne('payments', (payment) => payment.txHash === txHash && payment.checkoutId === checkout.id);
+    const conflicting = conflictingPaymentForTx({
+        store,
+        checkoutId: checkout.id,
+        chain: txChain,
+        txHash: normalizedTxHash
+    });
+    if (conflicting) {
+        const err = new Error('tx hash already linked to another checkout');
+        err.statusCode = 409;
+        throw err;
+    }
+    const existing = existingPaymentForCheckoutTx({
+        store,
+        checkoutId: checkout.id,
+        chain: txChain,
+        txHash: normalizedTxHash
+    });
     if (existing) {
         if (existing.status === 'confirmed')
             return { payment: existing, verification: existing.verification, duplicate: true };
@@ -79,7 +110,7 @@ async function verifyPaymentAndRecord({ store, providers, config, checkout, quot
             providers,
             quote: existingQuote,
             recipientAddress: existingRecipient,
-            txHash,
+            txHash: normalizedTxHash,
             walletAddress: walletAddress || existing.walletAddress
         });
         const updated = store.update('payments', existing.id, {
@@ -93,11 +124,11 @@ async function verifyPaymentAndRecord({ store, providers, config, checkout, quot
         return { payment: updated, verification, duplicate: true };
     }
     const recipientAddress = checkout.recipientByChain?.[quote.chain] || checkout.recipientByChain?.[chain] || checkout.recipientAddress;
-    const verification = await verifyQuotePayment({ providers, quote, recipientAddress, txHash, walletAddress });
+    const verification = await verifyQuotePayment({ providers, quote, recipientAddress, txHash: normalizedTxHash, walletAddress });
     const payment = store.insert('payments', {
         checkoutId: checkout.id,
         quoteId: quote.id,
-        txHash,
+        txHash: normalizedTxHash,
         walletAddress: walletAddress || null,
         method: 'onchain',
         chain: quote.chain,
@@ -151,7 +182,21 @@ async function reconcilePendingCheckoutPayments({ store, providers, config, chec
     return store.getById('checkouts', checkout.id) || latestCheckout;
 }
 async function recordManualDetectedPayment({ store, config, checkout, quote, txHash, walletAddress, recipientAddress, observedAmountBaseUnits, tokenAddress, blockNumber, confirmations }) {
-    const existing = store.findOne('payments', (payment) => payment.checkoutId === checkout.id && payment.txHash === txHash);
+    const normalizedTxHash = normalizeChainTxHash(txHash, quote.chain);
+    const conflicting = conflictingPaymentForTx({
+        store,
+        checkoutId: checkout.id,
+        chain: quote.chain,
+        txHash: normalizedTxHash
+    });
+    if (conflicting)
+        throw new Error('tx hash already linked to another checkout');
+    const existing = existingPaymentForCheckoutTx({
+        store,
+        checkoutId: checkout.id,
+        chain: quote.chain,
+        txHash: normalizedTxHash
+    });
     const verification = {
         ok: true,
         manual: true,
@@ -180,7 +225,7 @@ async function recordManualDetectedPayment({ store, config, checkout, quote, txH
     const payment = store.insert('payments', {
         checkoutId: checkout.id,
         quoteId: quote.id,
-        txHash,
+        txHash: normalizedTxHash,
         walletAddress: walletAddress || null,
         method: 'manual',
         chain: quote.chain,

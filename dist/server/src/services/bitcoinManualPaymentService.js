@@ -84,19 +84,32 @@ class BitcoinManualPaymentService {
                 .reduce((sum, output) => sum + Number(output.value || 0), 0));
             if (observed < expected)
                 continue;
-            await recordManualDetectedPayment({
-                store: this.store,
-                config: this.config,
-                checkout,
-                quote,
-                txHash: tx.txid,
-                walletAddress: '',
-                recipientAddress: checkout.recipientByChain.bitcoin,
-                observedAmountBaseUnits: observed.toString(),
-                tokenAddress: '',
-                blockNumber: blockHeight,
-                confirmations
-            });
+            try {
+                await recordManualDetectedPayment({
+                    store: this.store,
+                    config: this.config,
+                    checkout,
+                    quote,
+                    txHash: tx.txid,
+                    walletAddress: '',
+                    recipientAddress: checkout.recipientByChain.bitcoin,
+                    observedAmountBaseUnits: observed.toString(),
+                    tokenAddress: '',
+                    blockNumber: blockHeight,
+                    confirmations
+                });
+            }
+            catch (err) {
+                if (checkout?.manualPayment) {
+                    this.store.update('checkouts', checkout.id, {
+                        manualPayment: {
+                            ...(checkout.manualPayment || {}),
+                            lastScanError: err.message
+                        }
+                    });
+                }
+                break;
+            }
             break;
         }
         return this.store.getById('checkouts', checkout.id) || checkout;
