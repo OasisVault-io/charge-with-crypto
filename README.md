@@ -9,7 +9,10 @@ self hosted crypto checkout with a simpler review first ux.
 - checkout creation supports `acceptedAssets` so merchants can default to `USDC` + `USDT` and exclude routes they do not want
 - merchants can configure fixed plans in the dashboard, then resolve a checkout with only `referenceId` and `planId` via `POST /api/checkouts/resolve`
 - the same merchant webhook now resolves a checkout first and later receives `payment.confirmed`
-- manual pay now uses one deterministic derived EVM address per checkout, exposes a QR + address panel, verifies incoming stablecoin transfers onchain, and sweeps confirmed balances back to the merchant treasury
+- the same merchant product can now be sold to agents over `x402` on Base USDC via `POST /api/x402/resolve`
+- merchant products now have stable public endpoints for humans and agents: `POST /api/products/:id/checkouts` and `POST /api/products/:id/access`
+- Bazaar discovery metadata is attached to product x402 routes, and a lightweight MCP server is available at `GET/POST /mcp`
+- manual pay now uses one deterministic derived EVM address per checkout, exposes a QR + address panel, verifies incoming stablecoin transfers onchain, and can either sweep automatically or be swept later outside the app
 - stablecoin routes for `USDC` and `USDT` are pinned to `1 USD`, so those checkouts do not need quote refreshes
 
 ## scope and honesty
@@ -23,8 +26,9 @@ included:
 - wallet balance scan across enabled chains and accepted assets
 - manual tx submission and verification
 - webhook delivery with signed payloads
+- `x402` agent payments on Base USDC with Coinbase facilitator support
 - sqlite local persistence
-- deterministic manual payment address derivation, monitoring, and sweep orchestration for fixed stablecoin routes
+- deterministic manual payment address derivation, monitoring, and optional sweep orchestration for fixed stablecoin routes
 
 not included:
 - swaps, bridges, custody, subscriptions, refunds
@@ -64,7 +68,7 @@ npm run dev
 4. click `pay` to submit the onchain transaction from the injected wallet.
 5. if needed, reveal `pay manually`, send the stablecoins to the unique deposit address shown in the qr panel.
 6. Charge With Crypto monitors supported chains over rpc, marks the checkout paid after the transfer is confirmed, and emits a signed webhook.
-7. the sweeper funds gas and forwards the manual deposit balance to the merchant treasury address on that chain.
+7. if local or external sweeping is configured, the detected manual deposit can then be forwarded to the merchant treasury address on that chain.
 
 ## merchant address model
 - `recipientAddresses`: the real merchant settlement addresses used for the primary connected wallet flow and final verification
@@ -76,8 +80,8 @@ manual pay is only exposed for fixed stablecoin routes on chains that the mercha
 
 ## honesty about non custodial behavior
 - connected wallet path stays non custodial. the server never holds customer signing authority.
-- manual pay is operational treasury infrastructure. Charge With Crypto derives the deposit addresses and sweeps them, so the server must protect the manual payment mnemonic and sponsor key like real funds infrastructure.
-- manual pay is therefore optional and chain-specific. if you cannot secure the sweep keys, do not enable it.
+- manual pay can run in two EVM modes: `xpub` derivation with manual or external sweeping, or legacy mnemonic-based derivation with local sweeping.
+- bitcoin manual address derivation already uses `bitcoinXpub`; it does not require a mnemonic in the app.
 
 ## env
 - `APP_MODE`: `demo` or `production`. Defaults to `production` only when `NODE_ENV=production`, otherwise `demo`
@@ -86,10 +90,17 @@ manual pay is only exposed for fixed stablecoin routes on chains that the mercha
 - `QUOTE_EXPIRY_SECONDS`: quote ttl
 - `WEBHOOK_TIMEOUT_MS`, `WEBHOOK_RETRIES`, `WEBHOOK_BACKOFF_MS`: webhook delivery controls
 - `DASHBOARD_TOKEN`: required in `APP_MODE=production`
-- `MANUAL_PAYMENT_MNEMONIC`: root phrase used to derive one EVM deposit address per checkout
+- `MANUAL_PAYMENT_XPUB`: preferred EVM public derivation key for one deposit address per checkout without storing the seed phrase in-app
+- `MANUAL_PAYMENT_MNEMONIC`: legacy EVM root phrase if you want local derivation plus optional local sweep signing
 - `MANUAL_PAYMENT_DERIVATION_PATH`: base derivation path, default `m/44'/60'/0'/0`
-- `MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY`: funded EVM key that tops up gas for derived deposit wallets before sweeping tokens
+- `MANUAL_PAYMENT_SWEEP_SIGNER_URL`: optional external sweep service for xpub-derived wallets
+- `MANUAL_PAYMENT_SWEEP_SIGNER_SECRET`: optional bearer token for the external sweep service
+- `MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY`: funded EVM key that tops up gas for derived deposit wallets before sweeping tokens in legacy local sweep mode
 - `MANUAL_PAYMENT_SCAN_INTERVAL_MS`, `MANUAL_PAYMENT_SCAN_BLOCK_WINDOW`: monitor loop controls
+- `X402_ENABLED`: enable agent payments over `x402`
+- `CDP_API_KEY_ID`, `CDP_API_KEY_SECRET`: required for Coinbase facilitator verify + settle in production
+- `X402_FACILITATOR_URL`: optional custom facilitator override
+- `X402_BASE_NETWORK`, `X402_BASE_ASSET`: defaults are `eip155:8453` and `USDC`
 
 ## api
 - `GET /api/health`
@@ -97,9 +108,17 @@ manual pay is only exposed for fixed stablecoin routes on chains that the mercha
 - `GET /api/merchants`
 - `POST /api/merchants`
 - `PATCH /api/merchants/:id`
+- `GET /api/products`
+- `POST /api/products`
+- `GET /api/products/:id`
+- `PATCH /api/products/:id`
+- `POST /api/products/:id/checkouts`
+- `POST /api/products/:id/access`
 - `GET /api/dashboard?merchantId=merchant_default`
 - `POST /api/checkouts`
 - `POST /api/checkouts/resolve`
+- `POST /api/x402/resolve`
+- `POST /api/x402/checkouts/:id`
 - `POST /api/checkouts/:id/balance-scan`
 - `GET /api/checkouts/:id`
 - `GET /api/checkouts/:id/status`
@@ -108,6 +127,32 @@ manual pay is only exposed for fixed stablecoin routes on chains that the mercha
 - `GET /api/checkouts/:id/manual-payment`
 - `POST /api/wallet/connect-intent`
 - `GET /api/prices/:chain/:asset`
+- `GET /mcp`
+- `POST /mcp`
+
+`POST /api/checkouts` is for demo/admin flows. Real merchant integrations should use `POST /api/checkouts/resolve` from their backend.
+
+## x402 agent flow
+- use the same merchant `planId` and `referenceId` contract as the hosted checkout flow
+- agents call `POST /api/x402/resolve` with `merchantId`, `referenceId`, and optional `planId`
+- Charge With Crypto resolves the sale from the same merchant webhook used by `POST /api/checkouts/resolve`
+- if unpaid, the route responds with `402` plus `PAYMENT-REQUIRED`
+- if paid, Charge With Crypto settles through the facilitator, creates an internal paid checkout record, and emits the same `payment.confirmed` webhook the human flow uses
+- demo and QA flows can also point an agent at `POST /api/x402/checkouts/:id` so the same checkout record can be paid either by the hosted UI or by an agent
+- product-specific integrations can point agents at `POST /api/products/:id/access`, which adds Bazaar discovery metadata to the `402` response and creates the same paid checkout record a human flow would use
+- first cut is intentionally narrow: Base + USDC only
+
+## product endpoints
+- `POST /api/products` creates a stable merchant product record that can be used by both human and agent flows
+- `POST /api/products/:id/checkouts` creates a hosted checkout for a product, with optional `referenceId` and `quantity`
+- `POST /api/products/:id/access` exposes the same product over `x402` and settles into the same `payment.confirmed` flow
+- checkouts created from products store `productId` and `quantity`, so fulfillment can reconcile one sellable across both surfaces
+
+## mcp
+- `GET /mcp` returns endpoint metadata for remote MCP clients
+- `POST /mcp` implements a lightweight streamable HTTP MCP server
+- current tools: `list_products`, `get_product`, `create_human_checkout`, `get_agent_access`
+- the MCP layer is for discovery and orchestration; the paid agent path still settles through the product x402 endpoint
 
 `POST /api/checkouts` is for demo/admin flows. Real merchant integrations should use `POST /api/checkouts/resolve` from their backend.
 
@@ -129,6 +174,7 @@ manual pay is only exposed for fixed stablecoin routes on chains that the mercha
 - quote refresh and verification work per `chain + asset` route, not just per chain
 - `USDC` and `USDT` are treated as fixed peg assets at `1 USD`, so their quotes do not expire and the checkout hides refresh controls for all-stable sessions
 - manual pay confirms ERC-20 transfers by scanning `Transfer` logs to the unique derived deposit address across the merchant enabled chains
+- in xpub-only mode, detected deposits are marked `manual_required` for sweeping and the merchant can move funds later outside this app
 - checkout is marked paid only after the configured confirmation threshold is met
 
 ## test
@@ -141,5 +187,5 @@ npm test
 - set `APP_MODE=production` for real merchant traffic and keep public demos on a separate `demo` deployment
 - use distinct rpc providers per chain and a strong webhook secret per merchant
 - back up the sqlite file under `DATA_DIR` (default local path: `data/chaincart.sqlite`)
-- fund the manual sweep sponsor wallet on every chain where manual pay is enabled
-- protect the manual payment mnemonic and sponsor key like treasury secrets, because that is exactly what they are
+- if you use local automatic sweeping, fund the manual sweep sponsor wallet on every chain where manual pay is enabled
+- if you use xpub-only mode, the app never needs the EVM seed phrase, but you must operate your sweep flow elsewhere

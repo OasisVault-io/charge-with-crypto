@@ -8,6 +8,7 @@ const { isFixedPegAsset } = require('./priceService');
 const { recordManualDetectedPayment } = require('./paymentService');
 const { nowIso } = require('../utils/time');
 const { normalizeAddress } = require('../utils/validation');
+const { requestJson } = require('./merchantWebhookService');
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const ERC20_ABI = [
     'function balanceOf(address owner) view returns (uint256)',
@@ -41,8 +42,11 @@ class ManualPaymentService {
     constructor({ store, config }) {
         this.store = store;
         this.config = config;
+        this.xpub = String(config.manualPaymentXpub || '').trim();
         this.mnemonic = String(config.manualPaymentMnemonic || '').trim();
         this.derivationPath = String(config.manualPaymentDerivationPath || "m/44'/60'/0'/0").trim();
+        this.sweepSignerUrl = String(config.manualPaymentSweepSignerUrl || '').trim();
+        this.sweepSignerSecret = String(config.manualPaymentSweepSignerSecret || '').trim();
         this.sponsorPrivateKey = String(config.manualPaymentSweepSponsorPrivateKey || '').trim();
         this.scanIntervalMs = Math.max(5000, Number(config.manualPaymentScanIntervalMs || 15000));
         this.scanBlockWindow = Math.max(20, Number(config.manualPaymentScanBlockWindow || 250));
@@ -50,7 +54,12 @@ class ManualPaymentService {
         this.timer = null;
         this.running = false;
         this.counterLock = Promise.resolve();
-        this.sponsorAddress = this.sponsorPrivateKey ? new Wallet(this.sponsorPrivateKey).address : '';
+        this.rootXpub = this.xpub ? HDNodeWallet.fromExtendedKey(this.xpub) : null;
+        this.derivationMode = this.rootXpub ? 'xpub' : (this.mnemonic ? 'mnemonic' : 'disabled');
+        this.sweepMode = this.sweepSignerUrl
+            ? 'external_signer'
+            : (this.mnemonic && this.sponsorPrivateKey ? 'local' : 'manual');
+        this.sponsorAddress = this.sweepMode === 'local' && this.sponsorPrivateKey ? new Wallet(this.sponsorPrivateKey).address : '';
         for (const [chain, chainConfig] of Object.entries(config.chains)) {
             const endpoint = process.env[chainConfig.rpcUrlEnv];
             if (!endpoint)
@@ -59,11 +68,13 @@ class ManualPaymentService {
         }
     }
     isConfigured() {
-        return Boolean(this.mnemonic && this.sponsorPrivateKey && this.providers.size);
+        return Boolean((this.rootXpub || this.mnemonic) && this.providers.size);
     }
     status() {
         return {
             configured: this.isConfigured(),
+            derivationMode: this.derivationMode,
+            sweepMode: this.sweepMode,
             sponsorAddress: this.sponsorAddress || '',
             derivationPath: this.derivationPath
         };
@@ -75,11 +86,20 @@ class ManualPaymentService {
         return provider;
     }
     deriveWallet(index, chain) {
-        const path = `${this.derivationPath}/${Number(index)}`;
+        const numericIndex = Number(index);
+        if (this.rootXpub) {
+            const wallet = this.rootXpub.deriveChild(numericIndex);
+            return chain ? wallet.connect(this.provider(chain)) : wallet;
+        }
+        const path = `${this.derivationPath}/${numericIndex}`;
         const wallet = HDNodeWallet.fromPhrase(this.mnemonic, undefined, path);
-        if (!chain)
-            return wallet;
-        return wallet.connect(this.provider(chain));
+        return chain ? wallet.connect(this.provider(chain)) : wallet;
+    }
+    canAutoSweep() {
+        return this.sweepMode === 'local' || this.sweepMode === 'external_signer';
+    }
+    pendingSweepStatus() {
+        return this.canAutoSweep() ? 'queued' : 'manual_required';
     }
     nextDerivationIndexFromCheckouts() {
         const indexes = this.store.find('checkouts', (checkout) => Number.isInteger(checkout?.manualPayment?.derivationIndex))
@@ -311,19 +331,42 @@ class ManualPaymentService {
                 return a.blockNumber - b.blockNumber;
             return routeScore(a.quote) - routeScore(b.quote);
         })[0];
-        const payment = await recordManualDetectedPayment({
-            store: this.store,
-            config: this.config,
-            checkout,
-            quote: detected.quote,
-            txHash: detected.txHash,
-            walletAddress: detected.fromAddress,
-            recipientAddress: manualPayment.address,
-            observedAmountBaseUnits: detected.observedAmountBaseUnits.toString(),
-            tokenAddress: detected.tokenAddress,
-            blockNumber: detected.blockNumber,
-            confirmations: Math.max(1, latestBlock - detected.blockNumber + 1)
-        });
+        let payment;
+        try {
+            payment = await recordManualDetectedPayment({
+                store: this.store,
+                config: this.config,
+                checkout,
+                quote: detected.quote,
+                txHash: detected.txHash,
+                walletAddress: detected.fromAddress,
+                recipientAddress: manualPayment.address,
+                observedAmountBaseUnits: detected.observedAmountBaseUnits.toString(),
+                tokenAddress: detected.tokenAddress,
+                blockNumber: detected.blockNumber,
+                confirmations: Math.max(1, latestBlock - detected.blockNumber + 1)
+            });
+        }
+        catch (err) {
+            this.store.update('checkouts', checkout.id, {
+                manualPayment: {
+                    ...manualPayment,
+                    scanState,
+                    lastScanError: err.message,
+                    lastScanAt: nowIso()
+                }
+            });
+            return this.store.getById('checkouts', checkout.id) || checkout;
+        }
+        let sweep = payment.sweep || null;
+        if (!sweep || !sweep.status) {
+            sweep = {
+                status: this.pendingSweepStatus(),
+                mode: this.sweepMode,
+                updatedAt: nowIso()
+            };
+            payment = this.store.update('payments', payment.id, { sweep });
+        }
         this.store.update('checkouts', checkout.id, {
             manualPayment: {
                 ...manualPayment,
@@ -334,7 +377,7 @@ class ManualPaymentService {
                 detectedTxHash: detected.txHash,
                 detectedAmountBaseUnits: detected.observedAmountBaseUnits.toString(),
                 scanState,
-                sweepStatus: payment.sweep?.status || manualPayment.sweepStatus || 'queued'
+                sweepStatus: sweep.status || manualPayment.sweepStatus || this.pendingSweepStatus()
             }
         });
         return this.store.getById('checkouts', checkout.id) || checkout;
@@ -400,7 +443,7 @@ class ManualPaymentService {
         };
     }
     async processSweepQueue() {
-        if (!this.isConfigured())
+        if (!this.isConfigured() || !this.canAutoSweep())
             return;
         const pending = this.store.find('payments', (payment) => payment.method === 'manual' && payment.status === 'confirmed' && payment.txHash && payment.sweep?.status !== 'confirmed');
         for (const payment of pending) {
@@ -441,8 +484,6 @@ class ManualPaymentService {
         if (!treasuryAddress || !Number.isInteger(derivationIndex))
             return;
         const provider = this.provider(chain);
-        const childWallet = this.deriveWallet(derivationIndex, chain);
-        const sponsorWallet = new Wallet(this.sponsorPrivateKey, provider);
         const assetConfig = this.config.assets[asset];
         if (!assetConfig || assetConfig.type !== 'erc20') {
             this.store.update('payments', payment.id, {
@@ -456,8 +497,10 @@ class ManualPaymentService {
             return;
         }
         const tokenAddress = normalizeAddress(assetConfig.addresses?.[chain]);
-        const token = new Contract(tokenAddress, ERC20_ABI, childWallet);
-        const tokenBalance = BigInt(await token.balanceOf(childWallet.address));
+        const childWallet = this.deriveWallet(derivationIndex, chain);
+        const fromAddress = childWallet.address;
+        const tokenReader = new Contract(tokenAddress, ERC20_ABI, provider);
+        const tokenBalance = BigInt(await tokenReader.balanceOf(fromAddress));
         if (tokenBalance <= 0n) {
             this.store.update('payments', payment.id, {
                 sweep: {
@@ -470,28 +513,86 @@ class ManualPaymentService {
             });
             return;
         }
-        const feeData = await provider.getFeeData();
-        const feeOverrides = this.feeOverrides(feeData);
-        const txRequest = await token.transfer.populateTransaction(treasuryAddress, tokenBalance);
+        const feeData = await provider.getFeeData().catch(() => null);
+        const feeOverrides = feeData ? this.feeOverrides(feeData) : null;
+        const txRequest = await tokenReader.transfer.populateTransaction(treasuryAddress, tokenBalance);
         const gasLimit = BigInt(await provider.estimateGas({
-            from: childWallet.address,
+            from: fromAddress,
             to: tokenAddress,
             data: txRequest.data
         }));
+        if (this.sweepMode === 'external_signer') {
+            const sweepResult = await this.requestExternalSweep({
+                payment,
+                checkout,
+                chain,
+                derivationIndex,
+                fromAddress,
+                treasuryAddress,
+                tokenAddress,
+                tokenBalance,
+                gasLimit,
+                feeOverrides
+            });
+            this.store.update('payments', payment.id, {
+                sweep: {
+                    status: 'confirmed',
+                    mode: 'external_signer',
+                    fundingTxHash: sweepResult.fundingTxHash || '',
+                    txHash: sweepResult.txHash,
+                    amountBaseUnits: tokenBalance.toString(),
+                    treasuryAddress,
+                    sweptAt: nowIso(),
+                    updatedAt: nowIso()
+                }
+            });
+            this.store.update('checkouts', checkout.id, {
+                manualPayment: {
+                    ...(checkout.manualPayment || {}),
+                    sweepStatus: 'confirmed',
+                    sweptAt: nowIso(),
+                    sweepTxHash: sweepResult.txHash,
+                    fundingTxHash: sweepResult.fundingTxHash || ''
+                }
+            });
+            return;
+        }
+        if (this.sweepMode !== 'local') {
+            this.store.update('payments', payment.id, {
+                sweep: {
+                    ...(payment.sweep || {}),
+                    status: 'manual_required',
+                    mode: 'manual',
+                    amountBaseUnits: tokenBalance.toString(),
+                    treasuryAddress,
+                    updatedAt: nowIso()
+                }
+            });
+            this.store.update('checkouts', checkout.id, {
+                manualPayment: {
+                    ...(checkout.manualPayment || {}),
+                    sweepStatus: 'manual_required',
+                    updatedAt: nowIso()
+                }
+            });
+            return;
+        }
+        const sponsorWallet = new Wallet(this.sponsorPrivateKey, provider);
         const requiredNative = ((gasLimit * feeOverrides.unitPrice) * 12n) / 10n;
-        const currentNative = await provider.getBalance(childWallet.address);
+        const currentNative = await provider.getBalance(fromAddress);
         let fundingTxHash = payment.sweep?.fundingTxHash || null;
         if (currentNative < requiredNative) {
             const topUpAmount = requiredNative - currentNative;
             const fundingTx = await sponsorWallet.sendTransaction({
-                to: childWallet.address,
+                to: fromAddress,
                 value: topUpAmount,
                 ...feeOverrides.tx
             });
             fundingTxHash = fundingTx.hash;
             await fundingTx.wait(this.config.minConfirmations);
         }
-        const sweepTx = await childWallet.sendTransaction({
+        const signerWallet = this.deriveWallet(derivationIndex, chain);
+        const sweepTx = await signerWallet.sendTransaction({
             to: tokenAddress,
             data: txRequest.data,
             gasLimit,
@@ -575,11 +676,13 @@ class ManualPaymentService {
                     });
                 }
             }
-            try {
-                await this.processSweepQueue();
-            }
-            catch (err) {
-                console.error('manual_payment_sweep_error', err);
+            if (this.canAutoSweep()) {
+                try {
+                    await this.processSweepQueue();
+                }
+                catch (err) {
+                    console.error('manual_payment_sweep_error', err);
+                }
             }
         }
         finally {
@@ -601,4 +704,45 @@ class ManualPaymentService {
         this.timer = null;
     }
 }
+ManualPaymentService.prototype.requestExternalSweep = async function requestExternalSweep({ payment, checkout, chain, derivationIndex, fromAddress, treasuryAddress, tokenAddress, tokenBalance, gasLimit, feeOverrides }) {
+    const body = JSON.stringify({
+        action: 'sweep_erc20',
+        chain,
+        derivationPath: this.derivationPath,
+        derivationIndex,
+        fromAddress,
+        toAddress: treasuryAddress,
+        tokenAddress,
+        amountBaseUnits: tokenBalance.toString(),
+        gasLimit: gasLimit.toString(),
+        checkoutId: checkout.id,
+        paymentId: payment.id,
+        minConfirmations: this.config.minConfirmations,
+        fee: feeOverrides?.tx
+            ? Object.fromEntries(Object.entries(feeOverrides.tx).map(([key, value]) => [key, value.toString()]))
+            : {}
+    });
+    const headers = {
+        'content-type': 'application/json',
+        'content-length': Buffer.byteLength(body)
+    };
+    if (this.sweepSignerSecret)
+        headers.authorization = `Bearer ${this.sweepSignerSecret}`;
+    const response = await requestJson(this.sweepSignerUrl, {
+        body,
+        headers,
+        timeoutMs: this.config.webhookTimeoutMs
+    });
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw new Error(`external_sweeper_http_${response.statusCode}`);
+    }
+    const payload = response.body || {};
+    const txHash = String(payload.txHash || payload.sweepTxHash || '').trim();
+    if (!txHash)
+        throw new Error('external_sweeper_missing_tx_hash');
+    return {
+        txHash,
+        fundingTxHash: String(payload.fundingTxHash || '').trim()
+    };
+};
 module.exports = { ManualPaymentService };

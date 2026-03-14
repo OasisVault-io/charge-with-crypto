@@ -8,7 +8,8 @@ Use this when you are integrating Charge With Crypto into a real merchant flow.
 - Set `DASHBOARD_TOKEN` to a strong non-default value. Startup should fail if you do not.
 - Configure real RPC endpoints for every enabled chain.
 - Set a unique `WEBHOOK_SECRET` or merchant-specific `webhookSecret`.
-- Protect `MANUAL_PAYMENT_MNEMONIC` and `MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY` like treasury secrets if manual pay is enabled.
+- If you use legacy local EVM sweeping, protect `MANUAL_PAYMENT_MNEMONIC` and `MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY` like treasury secrets.
+- If you use xpub-only EVM derivation, treat `MANUAL_PAYMENT_XPUB` as public infrastructure data and secure only your external/manual sweep keys outside this app.
 
 ## Integration
 
@@ -28,5 +29,5 @@ Use this when you are integrating Charge With Crypto into a real merchant flow.
 
 - Monitor webhook delivery failures and onchain verification errors.
 - Back up the SQLite database under `DATA_DIR`.
-- Fund the manual sweep sponsor wallet on every chain where manual pay is enabled.
+- Fund the manual sweep sponsor wallet on every chain where manual pay is enabled only if you use local in-app sweeping.
 - Review enabled chains, accepted assets, and settlement addresses before going live.

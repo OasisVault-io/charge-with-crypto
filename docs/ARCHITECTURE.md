@@ -24,20 +24,20 @@
 7. manual pay is secondary only, hidden behind an explicit reveal, and shows the unique derived deposit address plus qr code for supported stablecoin routes.
 8. the manual payment monitor scans ERC-20 `Transfer` logs to that address across enabled chains, confirms matching deposits, then marks the checkout `paid`.
 9. successful verification marks checkout `paid`, stores a payment record, emits `payment.confirmed`, and attempts webhook delivery.
-10. the sweeper funds gas to the derived deposit wallet when needed and transfers the token balance to the merchant treasury address on that chain.
+10. if local sweeping is enabled, the sweeper funds gas to the derived deposit wallet when needed and transfers the token balance to the merchant treasury address on that chain.
 11. if a merchant uses `POST /api/checkouts/resolve`, Charge With Crypto first calls the merchant webhook with a signed `checkout.resolve` event including optional `planId` and turns the response into a checkout session.
 12. stablecoin quotes for `USDC` and `USDT` are fixed at `1 USD`, so those routes do not expire and do not need customer-facing refresh controls.
 
 ## manual payment model
 - merchant responsibility: choose which chains expose manual pay and keep the treasury settlement addresses current.
-- server responsibility: protect the manual payment mnemonic and sweep sponsor private key.
-- Charge With Crypto responsibility: derive one unique deposit address per checkout, expose it in the secondary manual panel, detect matching deposits onchain, and sweep confirmed balances to treasury.
+- server responsibility: protect any legacy mnemonic/sponsor key it holds, or alternatively hold only an EVM xpub and leave sweeping outside the app.
+- Charge With Crypto responsibility: derive one unique deposit address per checkout, expose it in the secondary manual panel, detect matching deposits onchain, and either sweep confirmed balances or mark them for external/manual sweeping.
 - current allocation rule: next unused derivation index under the configured HD path.
 - current release rule: none. derived addresses are treated as single use identifiers in v1.
 
 ## security notes
 - connected wallet path remains non custodial. Charge With Crypto does not sign for the customer.
-- manual pay is treasury infrastructure. whoever operates the server must secure the mnemonic and sponsor key.
+- manual pay is treasury infrastructure. if you use legacy local EVM sweeping, the server must secure the mnemonic and sponsor key. in xpub-only mode, sweeping authority stays outside this app.
 - webhook signature header: `x-charge-with-crypto-signature`.
 - signature input: `${timestamp}.${raw_json_body}`.
 
@@ -54,7 +54,7 @@
 - `manualPayment: { available, status, derivationIndex, address, enabledChains, acceptedAssets, scanState, sweepStatus }`
 
 ## explicit tradeoffs
-- this keeps the primary wallet flow non custodial for the customer, but manual pay is not keyless.
-- this handles deterministic derivation and sweeping for EVM stablecoins only.
+- this keeps the primary wallet flow non custodial for the customer, and lets EVM manual pay run in either xpub-only or legacy mnemonic mode.
+- this handles deterministic derivation and detection for EVM stablecoins only; sweeping can be local, external, or fully manual.
 - manual pay is intentionally limited to fixed stablecoin routes because volatile asset quotes do not fit an address-and-qr fallback well.
 - sweep reliability still depends on a funded sponsor wallet and healthy chain RPC access.

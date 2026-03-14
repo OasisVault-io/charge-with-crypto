@@ -12,9 +12,12 @@
     <main class="demo-shell">
       <section class="demo-panel">
         <div class="demo-panel-head">
-          <span class="eyebrow">Open source crypto checkout demo</span>
-          <h1>Test Charge With Crypto with your own receiving address.</h1>
-          <p class="muted">Enter a wallet address, choose an amount, generate a hosted checkout, and test the payment flow. Switch to an implementation example below to see how the same engine can be skinned.</p>
+          <div class="demo-panel-topbar">
+            <span class="eyebrow">Open-source crypto checkout demo</span>
+            <a class="demo-dashboard-link" href="/dashboard.html?merchantId=merchant_demo">Open demo dashboard</a>
+          </div>
+          <h1>Test a crypto checkout with your own receiving address</h1>
+          <p class="muted">Enter a receiving address and amount to generate one test checkout. Pay it yourself in the hosted UI or hand the same checkout to an agent over x402 on Base USDC when enabled.</p>
         </div>
 
         <form id="demoCheckoutForm" class="demo-form">
@@ -25,7 +28,7 @@
             </label>
             <div class="field-grid">
               <label>
-                Amount USD
+                Amount (USD)
                 <input id="demoAmount" type="number" min="0.5" step="0.01" value="5.00" required />
               </label>
               <label>
@@ -34,7 +37,7 @@
               </label>
             </div>
             <label>
-              Description
+              Payment description
               <textarea id="demoDescription">Connect a wallet, review the best route, and pay in one confirmation.</textarea>
             </label>
           </div>
@@ -42,29 +45,58 @@
           <div class="demo-implementation">
             <div class="demo-implementation-head">
               <span class="eyebrow">Implementation examples</span>
-              <p class="muted">Default is the neutral centered checkout. Click an example to preview that implementation style.</p>
+              <p class="muted">The default view shows a neutral checkout. Select an example below to preview a different implementation style.</p>
             </div>
             <div class="demo-example-list">
               <button type="button" class="demo-example-card is-active" data-template="neutral">
                 <span class="demo-example-kicker">Default</span>
                 <strong>Neutral demo</strong>
-                <span class="muted">Centered checkout box with neutral Charge With Crypto branding.</span>
+                <span class="muted">Simple centered checkout with default branding.</span>
               </button>
               <button type="button" class="demo-example-card" data-template="oasis">
                 <span class="demo-example-kicker">Example</span>
-                <strong>OasisVault</strong>
-                <span class="muted">Brand-heavy implementation using the OasisVault layout and palette.</span>
+                <strong>Oasis Vault example</strong>
+                <span class="muted">Checkout styled using the Oasis Vault layout and branding.</span>
               </button>
             </div>
           </div>
 
-          <div class="row demo-actions">
-            <button type="submit" class="primary-button">Create test checkout</button>
-            <a class="secondary-button" href="/dashboard.html?merchantId=merchant_demo">Open dashboard</a>
+          <div class="demo-actions">
+            <button type="submit" class="secondary-button demo-action-button">Create human checkout</button>
+            <button id="createAgentCheckoutBtn" type="button" class="secondary-button demo-action-button">Create agent checkout</button>
           </div>
 
           <div id="demoStatus" class="muted"></div>
         </form>
+
+        <section id="demoResult" class="demo-result" hidden>
+          <div class="demo-result-head">
+            <div>
+              <span class="eyebrow">Agent checkout</span>
+              <h2 id="demoResultTitle">Agent instructions</h2>
+            </div>
+            <span id="demoResultStatus" class="badge">Pending</span>
+          </div>
+
+          <section id="demoAgentCard" class="demo-result-card">
+            <strong>x402 endpoint</strong>
+            <p id="demoAgentSummary" class="muted">Give your agent the endpoint and prompt below. The same checkout will be marked paid after settlement.</p>
+            <div id="demoAgentEndpoint" class="code"></div>
+            <div id="demoStatusUrl" class="code"></div>
+            <div class="row demo-result-actions">
+              <button id="copyAgentEndpointBtn" type="button" class="secondary-button">Copy endpoint</button>
+              <button id="copyAgentPromptBtn" type="button" class="secondary-button">Copy agent prompt</button>
+            </div>
+            <div>
+              <span class="eyebrow">Prompt for your agent</span>
+              <pre id="demoAgentPrompt" class="demo-pre"></pre>
+            </div>
+            <div>
+              <span class="eyebrow">Quick unpaid probe</span>
+              <pre id="demoCurlCommand" class="demo-pre"></pre>
+            </div>
+          </section>
+        </section>
       </section>
     </main>
 

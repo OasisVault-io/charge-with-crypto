@@ -172,17 +172,19 @@ function listToLines(values) {
 function renderManualEngineStatus(config) {
   const node = document.getElementById('manualEngineStatus');
   if (!node) return;
-  const status = config?.manualPayment || { configured: false, sponsorAddress: '', derivationPath: '' };
+  const status = config?.manualPayment || { configured: false, sponsorAddress: '', derivationPath: '', evm: {} };
+  const evm = status?.evm || {};
   const bitcoinConfigured = Boolean(status?.bitcoin?.configured);
   if (!status.configured) {
     node.innerHTML = `
       <span class="badge warn">Server setup required</span>
-      <span class="muted">Set the manual payment mnemonic and sweep sponsor key in the server environment before enabling manual pay for customers.</span>
+      <span class="muted">Set an EVM xpub or legacy mnemonic plus RPC access before enabling manual pay for customers.</span>
     `;
     return;
   }
   node.innerHTML = `
     <span class="badge ok">Engine configured</span>
+    <span class="muted">EVM ${evm.derivationMode || 'disabled'} / ${evm.sweepMode || 'manual'} sweep</span>
     <span class="muted">Path ${status.derivationPath}</span>
     <span class="muted">Sponsor ${status.sponsorAddress || 'n/a'}</span>
     <span class="muted">Bitcoin watcher ${bitcoinConfigured ? 'ready' : 'not configured'}</span>

@@ -29,8 +29,40 @@ const projectRoot = projectRootCandidates.find((candidate) => fs.existsSync(path
 loadEnv(path.join(projectRoot, '.env'));
 const chainsConfigPath = path.join(projectRoot, 'config', 'chains.json');
 const chainsConfig = JSON.parse(fs.readFileSync(chainsConfigPath, 'utf8'));
+function normalizeAppMode(value, env = 'development') {
+    const fallback = env === 'production' ? 'production' : 'demo';
+    const candidate = String(value || fallback).trim().toLowerCase();
+    return candidate === 'production' ? 'production' : 'demo';
+}
+function validateRuntimeConfig(input) {
+    const appMode = normalizeAppMode(input?.appMode, input?.env || 'development');
+    if (appMode !== 'production')
+        return;
+    const dashboardToken = String(input?.dashboardToken || '').trim();
+    if (!dashboardToken || dashboardToken === 'change_me_before_public_deploy') {
+        throw new Error('DASHBOARD_TOKEN must be set to a non-default value when APP_MODE=production');
+    }
+    if (input?.x402Enabled) {
+        const apiKeyId = String(input?.cdpApiKeyId || '').trim();
+        const apiKeySecret = String(input?.cdpApiKeySecret || '').trim();
+        if (!apiKeyId || !apiKeySecret) {
+            throw new Error('CDP_API_KEY_ID and CDP_API_KEY_SECRET must be set when X402 is enabled in production');
+        }
+    }
+}
+function normalizeBoolean(value, fallback = false) {
+    if (value == null || value === '')
+        return fallback;
+    const candidate = String(value).trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(candidate))
+        return true;
+    if (['0', 'false', 'no', 'off'].includes(candidate))
+        return false;
+    return fallback;
+}
 const config = {
     env: process.env.NODE_ENV || 'development',
+    appMode: normalizeAppMode(process.env.APP_MODE, process.env.NODE_ENV || 'development'),
     port: Number(process.env.PORT || 3000),
     baseUrl: process.env.BASE_URL || 'http://localhost:3000',
     dataDir: process.env.DATA_DIR || path.join(projectRoot, 'data'),
@@ -42,13 +74,23 @@ const config = {
     webhookSecretFallback: process.env.WEBHOOK_SECRET || 'dev_webhook_secret_change_me',
     dashboardToken: process.env.DASHBOARD_TOKEN || '',
     minConfirmations: Number(process.env.MIN_CONFIRMATIONS || 1),
+    manualPaymentXpub: process.env.MANUAL_PAYMENT_XPUB || '',
     manualPaymentMnemonic: process.env.MANUAL_PAYMENT_MNEMONIC || '',
     manualPaymentDerivationPath: process.env.MANUAL_PAYMENT_DERIVATION_PATH || "m/44'/60'/0'/0",
+    manualPaymentSweepSignerUrl: requireOptionalString(process.env.MANUAL_PAYMENT_SWEEP_SIGNER_URL || '', 'MANUAL_PAYMENT_SWEEP_SIGNER_URL', { max: 240 }),
+    manualPaymentSweepSignerSecret: process.env.MANUAL_PAYMENT_SWEEP_SIGNER_SECRET || '',
     manualPaymentSweepSponsorPrivateKey: process.env.MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY || '',
     manualPaymentScanIntervalMs: Number(process.env.MANUAL_PAYMENT_SCAN_INTERVAL_MS || 15000),
     manualPaymentScanBlockWindow: Number(process.env.MANUAL_PAYMENT_SCAN_BLOCK_WINDOW || 250),
     bitcoinEsploraBaseUrl: requireOptionalString(process.env.BTC_ESPLORA_BASE_URL || 'https://blockstream.info/api', 'BTC_ESPLORA_BASE_URL', { max: 240 }),
+    cdpApiKeyId: process.env.CDP_API_KEY_ID || '',
+    cdpApiKeySecret: process.env.CDP_API_KEY_SECRET || '',
+    x402Enabled: normalizeBoolean(process.env.X402_ENABLED, Boolean(process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET)),
+    x402FacilitatorUrl: requireOptionalString(process.env.X402_FACILITATOR_URL || '', 'X402_FACILITATOR_URL', { max: 240 }),
+    x402BaseNetwork: process.env.X402_BASE_NETWORK || 'eip155:8453',
+    x402BaseAsset: process.env.X402_BASE_ASSET || 'USDC',
     chains: chainsConfig.chains,
     assets: chainsConfig.assets
 };
-module.exports = { config, projectRoot };
+validateRuntimeConfig(config);
+module.exports = { config, projectRoot, normalizeAppMode, validateRuntimeConfig, normalizeBoolean };
