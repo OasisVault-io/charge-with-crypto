@@ -99,6 +99,8 @@ class CompositeManualPaymentService {
       routes.push({
         key: 'evm',
         rail: 'evm',
+        chain: evmDetails.preferredQuote?.chain || (evmDetails.enabledChains || [])[0] || '',
+        asset: evmDetails.preferredQuote?.asset || (evmDetails.acceptedAssets || [])[0] || '',
         address: evmDetails.address,
         enabledChains: evmDetails.enabledChains || [],
         acceptedAssets: evmDetails.acceptedAssets || [],
@@ -133,6 +135,8 @@ class CompositeManualPaymentService {
       available: true,
       routes,
       preferredRouteKey: preferredRoute.key,
+      chain: preferredRoute.chain || preferredRoute.preferredQuote?.chain || '',
+      asset: preferredRoute.asset || preferredRoute.preferredQuote?.asset || '',
       address: preferredRoute.address,
       enabledChains: preferredRoute.enabledChains,
       acceptedAssets: preferredRoute.acceptedAssets,
