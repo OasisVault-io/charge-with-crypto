@@ -6,7 +6,7 @@ exports.recordManualDetectedPayment = recordManualDetectedPayment;
 exports.recordConfirmedExternalPayment = recordConfirmedExternalPayment;
 // @ts-nocheck
 const { nowIso } = require('../utils/time');
-const { deliverWebhook } = require('./webhookService');
+const { dispatchWebhook } = require('./webhookService');
 const { normalizeChainTxHash } = require('../utils/validation');
 function paymentMatchesChainTxHash(payment, chain, txHash) {
     return payment.chain === chain && String(payment.txHash || '').toLowerCase() === txHash;
@@ -30,6 +30,7 @@ async function emitPaymentConfirmed({ store, config, checkout, quote, payment, c
             checkoutId: checkout.id,
             productId: checkout.productId || null,
             referenceId: checkout.referenceId || null,
+            purchaseId: checkout.x402?.purchaseId || null,
             planId: checkout.planId || null,
             quantity: Number(checkout.quantity || 1),
             purchaseFlow: checkout.purchaseFlow || 'hosted_checkout',
@@ -50,7 +51,7 @@ async function emitPaymentConfirmed({ store, config, checkout, quote, payment, c
     });
     const merchant = store.getById('merchants', checkout.merchantId);
     if (merchant)
-        await deliverWebhook({ store, config, merchant, event });
+        void dispatchWebhook({ store, config, merchant, event });
 }
 async function confirmCheckoutIfNeeded({ store, config, checkout, quote, payment, chain }) {
     if (checkout.status === 'paid')

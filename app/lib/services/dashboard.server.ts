@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { getAppContext, getConfig, legacyApi, bitcoin, validation, productService } from '../server/runtime';
 import { parseBody, requestHeader } from '../utils/api';
 import { createMerchantBodySchema, updateMerchantBodySchema } from '../schemas/api';
@@ -115,7 +116,7 @@ export async function createMerchant(request: Request) {
       config
     }),
     webhookUrl: validation.requireUrl(body.webhookUrl || 'mock://webhook/custom', 'webhookUrl', { allowMock: true }),
-    webhookSecret: validation.requireOptionalString(body.webhookSecret, 'webhookSecret', { max: 240 }) || requestHeader(request, 'x-generated-secret') || `whsec_${Math.random().toString(36).slice(2, 12)}`,
+    webhookSecret: validation.requireOptionalString(body.webhookSecret, 'webhookSecret', { max: 240 }) || requestHeader(request, 'x-generated-secret') || `whsec_${randomBytes(18).toString('hex')}`,
     recipientAddresses,
     bitcoinXpub,
     publicCheckoutAllowed: Boolean(body.publicCheckoutAllowed),

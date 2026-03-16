@@ -19,6 +19,7 @@ Use this when you are integrating Charge With Crypto into a real merchant flow.
 - Do not expose public `POST /api/checkouts` for real merchant traffic.
 - Verify `checkout.resolve` and `payment.confirmed` webhook signatures using the raw request body.
 - Keep your own stable `referenceId` or `planId` mapping so you can reconcile `payment.confirmed`.
+- Require a unique `purchaseId` for every x402 agent purchase attempt.
 - If you expose agent access, verify your `productId` and `quantity` mapping on `payment.confirmed`.
 - Require customers to submit the wallet address they paid from for EVM `submit-tx` flows.
 

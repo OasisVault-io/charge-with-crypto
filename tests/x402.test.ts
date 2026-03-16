@@ -153,6 +153,7 @@ test('x402 resolve advertises Base USDC payment requirements and settles into th
     body: {
       merchantId: 'merchant_default',
       referenceId: 'agent_order_1',
+      purchaseId: 'purchase_agent_order_1',
       planId: 'agent_growth'
     },
     headers: { accept: 'application/json' },
@@ -185,6 +186,7 @@ test('x402 resolve advertises Base USDC payment requirements and settles into th
     body: {
       merchantId: 'merchant_default',
       referenceId: 'agent_order_1',
+      purchaseId: 'purchase_agent_order_1',
       planId: 'agent_growth'
     },
     headers: {
@@ -210,6 +212,7 @@ test('x402 resolve advertises Base USDC payment requirements and settles into th
   assert.equal(checkout.status, 'paid');
   assert.equal(checkout.purchaseFlow, 'x402');
   assert.equal(checkout.referenceId, 'agent_order_1');
+  assert.equal(checkout.x402.purchaseId, 'purchase_agent_order_1');
 
   const payment = store.getById('payments', paid.json.paymentId);
   assert.equal(payment.status, 'confirmed');
@@ -220,6 +223,7 @@ test('x402 resolve advertises Base USDC payment requirements and settles into th
   const confirmedEvent = store.find('events', (event) => event.checkoutId === checkout.id && event.type === 'payment.confirmed')[0];
   assert.ok(confirmedEvent);
   assert.equal(confirmedEvent.data.referenceId, 'agent_order_1');
+  assert.equal(confirmedEvent.data.purchaseId, 'purchase_agent_order_1');
   assert.equal(confirmedEvent.data.planId, 'agent_growth');
 
   const delivery = store.find('webhook_deliveries', (entry) => entry.eventId === confirmedEvent.id)[0];
@@ -232,6 +236,7 @@ test('x402 resolve advertises Base USDC payment requirements and settles into th
     body: {
       merchantId: 'merchant_default',
       referenceId: 'agent_order_1',
+      purchaseId: 'purchase_agent_order_1',
       planId: 'agent_growth'
     },
     headers: { accept: 'application/json' },
@@ -242,6 +247,23 @@ test('x402 resolve advertises Base USDC payment requirements and settles into th
   assert.equal(replay.json.alreadyPaid, true);
   assert.equal(replay.json.checkoutId, checkout.id);
   assert.equal(replay.json.paymentId, payment.id);
+
+  const nextPurchase = await invokeApi({
+    method: 'POST',
+    url: '/api/x402/resolve',
+    body: {
+      merchantId: 'merchant_default',
+      referenceId: 'agent_order_1',
+      purchaseId: 'purchase_agent_order_2',
+      planId: 'agent_growth'
+    },
+    headers: { accept: 'application/json' },
+    ctx
+  });
+
+  assert.equal(nextPurchase.statusCode, 402);
+  assert.equal(nextPurchase.json.referenceId, 'agent_order_1');
+  assert.equal(nextPurchase.json.purchaseId, 'purchase_agent_order_2');
 });
 
 test('checkout-scoped x402 route lets the same checkout be paid by an agent and later reports paid status', async () => {
@@ -375,6 +397,7 @@ test('product-scoped x402 route advertises Bazaar metadata and settles the share
     url: '/api/products/agent-api/access',
     body: {
       referenceId: 'buyer_1',
+      purchaseId: 'purchase_buyer_1',
       quantity: 2
     },
     headers: { accept: 'application/json' },
@@ -404,6 +427,7 @@ test('product-scoped x402 route advertises Bazaar metadata and settles the share
     url: '/api/products/agent-api/access',
     body: {
       referenceId: 'buyer_1',
+      purchaseId: 'purchase_buyer_1',
       quantity: 2
     },
     headers: {
@@ -430,4 +454,21 @@ test('product-scoped x402 route advertises Bazaar metadata and settles the share
   assert.ok(confirmedEvent);
   assert.equal(confirmedEvent.data.productId, 'agent-api');
   assert.equal(confirmedEvent.data.quantity, 2);
+  assert.equal(confirmedEvent.data.purchaseId, 'purchase_buyer_1');
+
+  const secondAttempt = await invokeApi({
+    method: 'POST',
+    url: '/api/products/agent-api/access',
+    body: {
+      referenceId: 'buyer_1',
+      purchaseId: 'purchase_buyer_2',
+      quantity: 2
+    },
+    headers: { accept: 'application/json' },
+    ctx
+  });
+
+  assert.equal(secondAttempt.statusCode, 402);
+  assert.equal(secondAttempt.json.referenceId, 'buyer_1');
+  assert.equal(secondAttempt.json.purchaseId, 'purchase_buyer_2');
 });

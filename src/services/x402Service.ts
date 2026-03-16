@@ -5,7 +5,7 @@ const { ExactEvmScheme } = require('@x402/evm/exact/server');
 const { createCdpAuthHeaders, createFacilitatorConfig } = require('@coinbase/x402');
 const { bazaarResourceServerExtension, declareDiscoveryExtension } = require('@x402/extensions/bazaar');
 const { resolveCheckoutFromMerchant } = require('./merchantWebhookService');
-const { buildProductSale, requireProduct, resolveProductMerchant } = require('./productService');
+const { buildProductSale, requireProduct, resolveProductMerchant, resolvePurchaseId } = require('./productService');
 const { recordConfirmedExternalPayment } = require('./paymentService');
 const { createCheckoutResponse } = require('../routes/api');
 const { createQuote, getActiveQuote } = require('./quoteService');
@@ -128,7 +128,7 @@ class X402Service {
   async handleResolveRequest(req, body = {}) {
     await this.requireEnabled();
     const sale = await this.resolveSale(body);
-    const paidCheckout = this.findPaidCheckout(sale);
+    const paidCheckout = this.findPaidCheckout(sale, X402_RESOURCE_PATH);
     if (paidCheckout) {
       return {
         status: 200,
@@ -136,7 +136,7 @@ class X402Service {
       };
     }
 
-    const prepared = await this.ensureCheckoutForSale(sale);
+    const prepared = await this.ensureCheckoutForSale(sale, X402_RESOURCE_PATH);
     return this.processSaleRequest({
       req,
       body,
@@ -180,7 +180,8 @@ class X402Service {
     const product = requireProduct(this.store, productId);
     const merchant = resolveProductMerchant({ store: this.store, product });
     const sale = this.validateProductSale(buildProductSale({ product, merchant, config: this.config, body }));
-    const paidCheckout = this.findPaidCheckout(sale);
+    const resourcePath = `${X402_PRODUCT_RESOURCE_PREFIX}/${sale.productId}/access`;
+    const paidCheckout = this.findPaidCheckout(sale, resourcePath);
     if (paidCheckout) {
       return {
         status: 200,
@@ -195,7 +196,7 @@ class X402Service {
       sale,
       checkout: prepared.checkout,
       quote: prepared.quote,
-      resourcePath: `${X402_PRODUCT_RESOURCE_PREFIX}/${sale.productId}/access`,
+      resourcePath,
       extensions: this.discoveryExtensionForProductSale(sale)
     });
   }
@@ -319,6 +320,7 @@ class X402Service {
   async resolveSale(body) {
     const merchantId = String(body.merchantId || DEFAULT_MERCHANT_ID);
     const referenceId = String(body.referenceId || '').trim();
+    const purchaseId = resolvePurchaseId(body, { required: true });
     const requestedPlanId = String(body.planId || '').trim();
     if (!referenceId) {
       const err = new Error('referenceId is required');
@@ -372,6 +374,7 @@ class X402Service {
       merchantId,
       merchant,
       referenceId,
+      purchaseId,
       quantity: 1,
       planId: String(resolved.planId || requestedPlanId || '').trim().toLowerCase(),
       orderId: String(resolved.orderId || referenceId),
@@ -416,6 +419,7 @@ class X402Service {
       merchantId: checkout.merchantId,
       merchant,
       referenceId: String(checkout.referenceId || checkout.orderId || checkout.id),
+      purchaseId: String(checkout.x402?.purchaseId || ''),
       quantity: Number(checkout.quantity || 1),
       planId: String(checkout.planId || '').trim().toLowerCase(),
       orderId: String(checkout.orderId || checkout.referenceId || checkout.id),
@@ -437,26 +441,37 @@ class X402Service {
       && String(checkout.productId || '') === String(sale.productId || '')
       && String(checkout.referenceId || '') === sale.referenceId
       && String(checkout.planId || '') === String(sale.planId || '')
-      && Number(checkout.quantity || 1) === Number(sale.quantity || 1);
+      && Number(checkout.quantity || 1) === Number(sale.quantity || 1)
+      && Number(Number(checkout.amountUsd || 0).toFixed(2)) === Number(Number(sale.amountUsd || 0).toFixed(2));
   }
 
-  x402CheckoutMatchesSale(checkout, sale) {
-    return this.checkoutMatchesSale(checkout, sale)
-      && String(checkout.x402?.resource || '') === X402_RESOURCE_PATH;
+  purchaseKeyMatchesSale(checkout, sale, resourcePath) {
+    return String(checkout.x402?.resource || '') === resourcePath
+      && String(checkout.x402?.purchaseId || '') === String(sale.purchaseId || '');
   }
 
-  findPaidCheckout(sale) {
-    return findOne(this.store, 'checkouts', (checkout) =>
-      this.checkoutMatchesSale(checkout, sale) &&
-      checkout.status === 'paid'
+  findPurchaseCheckout(sale, resourcePath) {
+    const checkout = findOne(this.store, 'checkouts', (candidate) =>
+      this.purchaseKeyMatchesSale(candidate, sale, resourcePath)
     );
+    if (!checkout) return null;
+    if (!this.checkoutMatchesSale(checkout, sale)) {
+      const err = new Error('purchaseId already exists for different sale details');
+      err.statusCode = 409;
+      err.code = 'purchase_conflict';
+      throw err;
+    }
+    return checkout;
   }
 
-  findPendingCheckout(sale) {
-    return findOne(this.store, 'checkouts', (checkout) =>
-      this.x402CheckoutMatchesSale(checkout, sale) &&
-      checkout.status !== 'paid'
-    );
+  findPaidCheckout(sale, resourcePath) {
+    const checkout = this.findPurchaseCheckout(sale, resourcePath);
+    return checkout && checkout.status === 'paid' ? checkout : null;
+  }
+
+  findPendingCheckout(sale, resourcePath) {
+    const checkout = this.findPurchaseCheckout(sale, resourcePath);
+    return checkout && checkout.status !== 'paid' ? checkout : null;
   }
 
   confirmedPaymentForCheckout(checkoutId) {
@@ -474,6 +489,7 @@ class X402Service {
       merchantId: sale.merchantId,
       merchantName: sale.merchant.brandName || sale.merchant.name,
       referenceId: sale.referenceId,
+      purchaseId: sale.purchaseId || null,
       quantity: sale.quantity || 1,
       planId: sale.planId || null,
       title: sale.title,
@@ -497,6 +513,7 @@ class X402Service {
       merchantId: sale.merchantId,
       merchantName: sale.merchant.brandName || sale.merchant.name,
       referenceId: sale.referenceId,
+      purchaseId: sale.purchaseId || null,
       quantity: sale.quantity || 1,
       planId: sale.planId || null,
       title: sale.title,
@@ -515,8 +532,8 @@ class X402Service {
     };
   }
 
-  async ensureCheckoutForSale(sale) {
-    const existing = this.findPendingCheckout(sale);
+  async ensureCheckoutForSale(sale, resourcePath = X402_RESOURCE_PATH) {
+    const existing = this.findPendingCheckout(sale, resourcePath);
     if (existing) {
       const quote = findOne(this.store, 'quotes', (candidate) =>
         candidate.checkoutId === existing.id &&
@@ -555,7 +572,8 @@ class X402Service {
     const checkout = this.store.update('checkouts', created.body.checkout.id, {
       purchaseFlow: 'x402',
       x402: {
-        resource: X402_RESOURCE_PATH,
+        resource: resourcePath,
+        purchaseId: sale.purchaseId,
         network: sale.network,
         asset: sale.asset,
         chain: sale.chain,
@@ -605,6 +623,7 @@ class X402Service {
       bodyType: 'json',
       input: {
         referenceId: 'customer_123',
+        purchaseId: 'purchase_123',
         quantity: 1
       },
       inputSchema: {
@@ -618,9 +637,13 @@ class X402Service {
             type: 'integer',
             minimum: 1,
             description: 'How many units of this product to purchase.'
+          },
+          purchaseId: {
+            type: 'string',
+            description: 'One-time idempotency key for this specific agent purchase attempt.'
           }
         },
-        required: ['referenceId'],
+        required: ['referenceId', 'purchaseId'],
         additionalProperties: false
       },
       output: {
@@ -629,6 +652,7 @@ class X402Service {
           paymentMethod: 'x402',
           productId: sale.productId,
           referenceId: 'customer_123',
+          purchaseId: 'purchase_123',
           quantity: 1,
           title: sale.title,
           amountUsd: sale.amountUsd,

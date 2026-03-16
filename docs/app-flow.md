@@ -57,7 +57,7 @@ When x402 is enabled:
 2. Charge With Crypto returns the x402 payment requirements
 3. the agent pays over Base USDC
 4. the same underlying sellable is marked paid
-5. `payment.confirmed` is emitted with the matching `productId`, `quantity`, and `purchaseFlow`
+5. `payment.confirmed` is emitted with the matching `productId`, `quantity`, `purchaseId`, and `purchaseFlow`
 
 There is also a checkout-scoped x402 route at `POST /api/x402/checkouts/:id` when you want an agent to pay an already-created hosted checkout.
 
@@ -103,7 +103,7 @@ After successful verification:
 1. a payment record is stored
 2. the checkout is marked `paid`
 3. a `payment.confirmed` event is created
-4. the merchant webhook is delivered
+4. webhook delivery is dispatched asynchronously so merchant latency does not block payment confirmation
 
 ## MCP
 

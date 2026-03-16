@@ -1,5 +1,6 @@
 import { getAppContext } from '../server/runtime';
 import { parseBody } from '../utils/api';
+import { x402ProductAccessBodySchema, x402ResolveBodySchema } from '../schemas/api';
 
 function nodeishRequest(request: Request) {
   const url = new URL(request.url);
@@ -12,7 +13,7 @@ function nodeishRequest(request: Request) {
 
 export async function resolveX402(request: Request) {
   const { x402Service } = getAppContext();
-  const body = await parseBody<Record<string, any>>(request);
+  const body = await parseBody<Record<string, any>>(request, x402ResolveBodySchema);
   return x402Service.handleResolveRequest(nodeishRequest(request), body);
 }
 
@@ -24,6 +25,6 @@ export async function checkoutX402(request: Request, checkoutId: string) {
 
 export async function productAccessX402(request: Request, productId: string) {
   const { x402Service } = getAppContext();
-  const body = await parseBody<Record<string, any>>(request);
+  const body = await parseBody<Record<string, any>>(request, x402ProductAccessBodySchema);
   return x402Service.handleProductAccessRequest(nodeishRequest(request), productId, body);
 }

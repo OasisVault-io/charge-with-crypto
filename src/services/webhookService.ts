@@ -83,6 +83,17 @@ async function deliverWebhook({ store, config, merchant, event }) {
   return { delivered: false, error: lastErr ? lastErr.message : 'delivery_failed', signature };
 }
 
+function dispatchWebhook(args, logger = console) {
+  return deliverWebhook(args).catch((err) => {
+    logger.error?.('webhook_delivery_error', {
+      merchantId: args?.merchant?.id || '',
+      eventId: args?.event?.id || '',
+      message: err?.message || 'delivery_failed'
+    });
+    return { delivered: false, error: err?.message || 'delivery_failed' };
+  });
+}
+
 function requestOnce(endpoint, body, signature, timestamp, timeoutMs) {
   return new Promise((resolve, reject) => {
     const url = new URL(endpoint);
@@ -117,4 +128,6 @@ function requestOnce(endpoint, body, signature, timestamp, timeoutMs) {
   });
 }
 
-module.exports = { deliverWebhook, eventPayload };
+module.exports = { deliverWebhook, dispatchWebhook, eventPayload };
+
+export { deliverWebhook, dispatchWebhook, eventPayload };

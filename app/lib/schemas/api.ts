@@ -7,6 +7,11 @@ const optionalString = z.union([z.string(), z.null(), z.undefined()]).transform(
 
 const optionalStringArray = z.array(z.string()).optional().default([]);
 const optionalRecord = z.record(z.string(), z.string()).optional().default({});
+const optionalInteger = z.union([z.number(), z.string(), z.null(), z.undefined()]).transform((value) => {
+  if (value == null || value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : value;
+});
 
 export const createCheckoutBodySchema = z.object({
   merchantId: optionalString,
@@ -49,6 +54,22 @@ export const submitCheckoutTxBodySchema = z.object({
 
 export const walletConnectIntentBodySchema = z.object({
   chain: optionalString
+}).passthrough();
+
+export const x402ResolveBodySchema = z.object({
+  merchantId: optionalString,
+  referenceId: optionalString,
+  purchaseId: optionalString,
+  idempotencyKey: optionalString,
+  planId: optionalString
+}).passthrough();
+
+export const x402ProductAccessBodySchema = z.object({
+  referenceId: optionalString,
+  purchaseId: optionalString,
+  idempotencyKey: optionalString,
+  orderId: optionalString,
+  quantity: optionalInteger
 }).passthrough();
 
 export const updateMerchantBodySchema = z.object({

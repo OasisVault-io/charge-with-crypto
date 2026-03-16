@@ -24,6 +24,16 @@ function parseQuantity(value, fallback = 1) {
   return quantity;
 }
 
+function resolvePurchaseId(body = {}, { required = false } = {}) {
+  const purchaseId = String(body.purchaseId || body.idempotencyKey || '').trim();
+  if (required && !purchaseId) {
+    const err = new Error('purchaseId is required');
+    err.statusCode = 400;
+    throw err;
+  }
+  return purchaseId;
+}
+
 function roundUsd(value) {
   return Number(Number(value || 0).toFixed(2));
 }
@@ -151,6 +161,7 @@ function buildProductCheckoutInput({ product, merchant, body = {} }) {
 function buildProductSale({ product, merchant, config, body = {} }) {
   const quantity = parseQuantity(body.quantity, 1);
   const referenceId = String(body.referenceId || '').trim();
+  const purchaseId = resolvePurchaseId(body, { required: true });
   if (!referenceId) {
     const err = new Error('referenceId is required');
     err.statusCode = 400;
@@ -163,6 +174,7 @@ function buildProductSale({ product, merchant, config, body = {} }) {
     merchantId: product.merchantId,
     merchant,
     referenceId,
+    purchaseId,
     quantity,
     unitAmountUsd,
     amountUsd,
@@ -192,6 +204,7 @@ module.exports = {
   parseQuantity,
   productEndpoints,
   publicProduct,
+  resolvePurchaseId,
   requireProduct,
   resolveProductMerchant,
   upsertManagedProducts
@@ -207,6 +220,7 @@ export {
   parseQuantity,
   productEndpoints,
   publicProduct,
+  resolvePurchaseId,
   requireProduct,
   resolveProductMerchant,
   upsertManagedProducts

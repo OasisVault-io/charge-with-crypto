@@ -94,10 +94,11 @@ class McpService {
           properties: {
             productId: { type: 'string' },
             referenceId: { type: 'string' },
+            purchaseId: { type: 'string' },
             quantity: { type: 'integer', minimum: 1 },
             orderId: { type: 'string' }
           },
-          required: ['productId', 'referenceId'],
+          required: ['productId', 'referenceId', 'purchaseId'],
           additionalProperties: false
         }
       }
@@ -160,6 +161,7 @@ class McpService {
         method: 'POST',
         body: {
           referenceId: String(args.referenceId || ''),
+          purchaseId: String(args.purchaseId || args.idempotencyKey || ''),
           quantity: args.quantity == null ? 1 : Number(args.quantity),
           ...(args.orderId ? { orderId: String(args.orderId) } : {})
         }

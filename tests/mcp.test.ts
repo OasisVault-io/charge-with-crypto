@@ -99,8 +99,10 @@ test('mcp endpoint exposes product discovery plus human and agent helper tools',
   const agentAccess = await service.callTool('get_agent_access', {
     productId: 'mcp-product',
     referenceId: 'buyer_7',
+    purchaseId: 'purchase_7',
     quantity: 2
   });
   assert.equal(agentAccess.structuredContent.endpoint, 'http://127.0.0.1:0/api/products/mcp-product/access');
   assert.equal(agentAccess.structuredContent.body.referenceId, 'buyer_7');
+  assert.equal(agentAccess.structuredContent.body.purchaseId, 'purchase_7');
 });

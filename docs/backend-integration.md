@@ -56,11 +56,12 @@ Example:
 ```json
 {
   "referenceId": "svc_12345",
+  "purchaseId": "purchase_01hrw8j5w4v8j1w7l5a1x8m2bt",
   "quantity": 2
 }
 ```
 
-If x402 is enabled, this route returns payment requirements to an unpaid agent request and settles the same product through Base USDC.
+Use a stable `referenceId` for your own customer or entitlement mapping, and a unique `purchaseId` for each x402 purchase attempt. If x402 is enabled, this route returns payment requirements to an unpaid agent request and settles the same product through Base USDC.
 
 ## Merchant webhook events
 
@@ -96,6 +97,7 @@ Charge With Crypto sends:
   "data": {
     "checkoutId": "checkouts_xxx",
     "referenceId": "sub_12345",
+    "purchaseId": "purchase_01hrw8j5w4v8j1w7l5a1x8m2bt",
     "planId": "growth",
     "productId": "api-access",
     "quantity": 2,
@@ -110,7 +112,7 @@ Charge With Crypto sends:
 }
 ```
 
-Your backend should verify the signature, reconcile the payment, and unlock the product or service.
+Your backend should verify the signature, reconcile the payment, and unlock the product or service. `referenceId` is your stable reconciliation key; `purchaseId` is the one-time agent purchase key that prevents free x402 replays.
 
 The important point is that a hosted human checkout and an x402 agent purchase converge on the same confirmation event shape.
 
