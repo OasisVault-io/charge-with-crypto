@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@coinbase/x402": "^2.1.0",
+    "@epic-web/config": "^1.24.1",
     "@phantom/browser-sdk": "^1.0.5",
     "@react-router/node": "^7.13.1",
     "@react-router/serve": "^7.13.1",
@@ -47,8 +48,12 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "esbuild": "^0.27.3",
+    "eslint": "^10.0.3",
+    "prettier": "3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vite": "^7.1.5"
-  }
+  },
+  "prettier": "@epic-web/config/prettier"
 }
