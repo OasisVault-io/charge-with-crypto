@@ -6,6 +6,17 @@ import { pathToFileURL } from 'node:url';
 
 const require = createRequire(import.meta.url);
 
+type ResolveFilename = (
+  request: string,
+  parent?: NodeJS.Module | null,
+  isMain?: boolean,
+  options?: unknown
+) => string;
+
+const moduleWithResolve = Module as typeof Module & {
+  _resolveFilename: ResolveFilename;
+};
+
 const projectRoot = process.cwd();
 const sourceRoot = path.join(projectRoot, 'src');
 const compiledRoot = path.join(projectRoot, 'dist', 'server', 'src');
@@ -21,8 +32,8 @@ const useCompiledRuntime = runtimeSource === 'src'
 const runtimeRoot = useCompiledRuntime ? compiledRoot : sourceRoot;
 
 if (!useCompiledRuntime && !(globalThis as { __cwcTsResolvePatched?: boolean }).__cwcTsResolvePatched) {
-  const originalResolveFilename = Module._resolveFilename;
-  Module._resolveFilename = function patchedResolveFilename(request, parent, isMain, options) {
+  const originalResolveFilename = moduleWithResolve._resolveFilename;
+  moduleWithResolve._resolveFilename = function patchedResolveFilename(request, parent, isMain, options) {
     try {
       return originalResolveFilename.call(this, request, parent, isMain, options);
     } catch (error) {

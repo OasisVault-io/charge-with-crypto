@@ -1402,6 +1402,7 @@ textarea:focus {
 	--warn: #f4f4f5;
 	--warn-soft: rgba(244, 244, 245, 0.08);
 	--shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+	min-height: 100vh;
 	background: #323232;
 }
 
