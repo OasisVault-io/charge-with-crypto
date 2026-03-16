@@ -1,38 +1,21 @@
 import { chainLabel, refreshNeeded } from './checkout.shared'
-import {
-  type CheckoutBalance,
-  type CheckoutConfig,
-  type CheckoutQuote,
-  type CheckoutRecord,
-} from './checkout.types'
+import { useCheckoutPageContext } from './context/CheckoutPageContext'
 
-type CheckoutRouteStageProps = {
-  checkout: CheckoutRecord | null | undefined
-  config: CheckoutConfig | null | undefined
-  expired: boolean
-  isBusy: boolean
-  manualPanelOpen: boolean
-  recommendedQuote: CheckoutQuote | null
-  routeBalance: CheckoutBalance | null
-  routePayable: boolean
-  walletConnected: boolean
-  onPayWithWallet: () => Promise<void>
-  onRefreshQuote: () => Promise<void>
-}
+export function CheckoutRouteStage() {
+  const {
+    checkout,
+    config,
+    expired,
+    isBusy,
+    manualPanelOpen,
+    payWithWallet,
+    recommendedQuote,
+    refreshQuote,
+    routeBalance,
+    routePayable,
+    walletConnected,
+  } = useCheckoutPageContext()
 
-export function CheckoutRouteStage({
-  checkout,
-  config,
-  expired,
-  isBusy,
-  manualPanelOpen,
-  recommendedQuote,
-  routeBalance,
-  routePayable,
-  walletConnected,
-  onPayWithWallet,
-  onRefreshQuote,
-}: CheckoutRouteStageProps) {
   return (
     <>
       <section
@@ -110,7 +93,7 @@ export function CheckoutRouteStage({
             checkout?.status === 'paid'
           }
           type="button"
-          onClick={() => void onPayWithWallet()}
+          onClick={() => void payWithWallet()}
         >
           {recommendedQuote
             ? `Pay ${recommendedQuote.cryptoAmount} ${recommendedQuote.asset}`
@@ -121,7 +104,7 @@ export function CheckoutRouteStage({
           disabled={isBusy}
           hidden={!refreshNeeded(config, checkout) && !expired}
           type="button"
-          onClick={() => void onRefreshQuote()}
+          onClick={() => void refreshQuote()}
         >
           Refresh prices
         </button>

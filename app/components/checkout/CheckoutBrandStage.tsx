@@ -1,15 +1,8 @@
-type CheckoutBrandStageProps = {
-  description: string
-  heroParts: {
-    lead: string
-    trail: string
-  }
-}
+import { useCheckoutPageContext } from './context/CheckoutPageContext'
 
-export function CheckoutBrandStage({
-  description,
-  heroParts,
-}: CheckoutBrandStageProps) {
+export function CheckoutBrandStage() {
+  const { description, heroParts } = useCheckoutPageContext()
+
   return (
     <section className="checkout-brand-stage">
       <div className="brand-copy">

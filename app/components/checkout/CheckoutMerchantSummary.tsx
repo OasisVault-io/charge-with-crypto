@@ -1,19 +1,10 @@
-import { type CheckoutRecord } from './checkout.types'
+import { useCheckoutPageContext } from './context/CheckoutPageContext'
 import { LogoImage } from './LogoImage'
 
-type CheckoutMerchantSummaryProps = {
-  checkout: CheckoutRecord | null | undefined
-  logoSrc: string
-  merchantName: string
-  setLogoSrc: (value: string) => void
-}
+export function CheckoutMerchantSummary() {
+  const { checkout, logoSrc, merchantName, setLogoSrc } =
+    useCheckoutPageContext()
 
-export function CheckoutMerchantSummary({
-  checkout,
-  logoSrc,
-  merchantName,
-  setLogoSrc,
-}: CheckoutMerchantSummaryProps) {
   return (
     <section className="card checkout-info-card">
       <div className="summary-panel muted">

@@ -31,6 +31,7 @@ import { CheckoutRouteStage } from './CheckoutRouteStage'
 import { CheckoutStatusPanel } from './CheckoutStatusPanel'
 import { CheckoutSuccessCard } from './CheckoutSuccessCard'
 import { CheckoutWalletStage } from './CheckoutWalletStage'
+import { CheckoutPageProvider } from './context/CheckoutPageContext'
 import { useCheckoutPageActions } from './hooks/useCheckoutPageActions'
 import { useCheckoutPageState } from './hooks/useCheckoutPageState'
 
@@ -227,6 +228,79 @@ export function CheckoutPage({
   const routePayable = recommendedQuote
     ? isQuotePayable(viewState?.balances, recommendedQuote)
     : false
+  const description =
+    checkout?.description ||
+    'Connect a wallet and Charge With Crypto will recommend the cleanest way to pay.'
+  const checkoutPageContextValue = useMemo(
+    () => ({
+      amountText,
+      availableWalletProviders,
+      checkout,
+      closeManualPanel,
+      config,
+      connectWallet,
+      copyManualAddress,
+      description,
+      disconnectWallet,
+      expired,
+      hasManualPayment,
+      heroParts,
+      isBusy,
+      logoSrc,
+      manualPanelOpen,
+      merchantName,
+      paymentRail,
+      payments,
+      payWithWallet,
+      pendingPayment,
+      recommendedQuote,
+      refreshQuote,
+      routeBalance,
+      routePayable,
+      selectedManualRoute,
+      setLogoSrc,
+      statusMessage,
+      walletCompatibleQuotes,
+      walletConnected,
+      walletMetaCopy,
+      walletSession,
+      openManualPanel,
+    }),
+    [
+      amountText,
+      availableWalletProviders,
+      checkout,
+      closeManualPanel,
+      config,
+      connectWallet,
+      copyManualAddress,
+      description,
+      disconnectWallet,
+      expired,
+      hasManualPayment,
+      heroParts,
+      isBusy,
+      logoSrc,
+      manualPanelOpen,
+      merchantName,
+      openManualPanel,
+      payWithWallet,
+      paymentRail,
+      payments,
+      pendingPayment,
+      recommendedQuote,
+      refreshQuote,
+      routeBalance,
+      routePayable,
+      selectedManualRoute,
+      setLogoSrc,
+      statusMessage,
+      walletCompatibleQuotes,
+      walletConnected,
+      walletMetaCopy,
+      walletSession,
+    ],
+  )
 
   return (
     <div className={pageClassName}>
@@ -236,114 +310,51 @@ export function CheckoutPage({
       <div className="atmosphere atmosphere-c"></div>
 
       <main className="checkout-shell">
-        <CheckoutBrandStage
-          description={
-            checkout?.description ||
-            'Connect a wallet and Charge With Crypto will recommend the cleanest way to pay.'
-          }
-          heroParts={heroParts}
-        />
+        <CheckoutPageProvider value={checkoutPageContextValue}>
+          <CheckoutBrandStage />
 
-        <section className="checkout-payment-stage">
-          <section className="payment-card">
-            <header className="payment-card-header">
-              <div className="payment-heading">
-                <div className="eyebrow">Review and pay</div>
-                <h2>{checkout?.title || 'Review and pay'}</h2>
-              </div>
-
-              <div className="hero-total">
-                <span className="eyebrow">Amount due</span>
-                <div
-                  className={dueAmountClassName(amountText)}
-                  title={amountText}
-                >
-                  {amountText}
+          <section className="checkout-payment-stage">
+            <section className="payment-card">
+              <header className="payment-card-header">
+                <div className="payment-heading">
+                  <div className="eyebrow">Review and pay</div>
+                  <h2>{checkout?.title || 'Review and pay'}</h2>
                 </div>
-                <div className="pill-row">
-                  {(checkout?.acceptedAssets || [checkout?.asset]).map(
-                    (asset: string) => (
-                      <span className="asset-pill" key={asset}>
-                        {asset}
-                      </span>
-                    ),
-                  )}
+
+                <div className="hero-total">
+                  <span className="eyebrow">Amount due</span>
+                  <div
+                    className={dueAmountClassName(amountText)}
+                    title={amountText}
+                  >
+                    {amountText}
+                  </div>
+                  <div className="pill-row">
+                    {(checkout?.acceptedAssets || [checkout?.asset]).map(
+                      (asset: string) => (
+                        <span className="asset-pill" key={asset}>
+                          {asset}
+                        </span>
+                      ),
+                    )}
+                  </div>
                 </div>
-              </div>
-            </header>
+              </header>
 
-            {checkout?.status === 'paid' ? (
-              <CheckoutSuccessCard
-                checkout={checkout}
-                config={config}
-                payments={payments}
-              />
-            ) : (
-              <div className="payment-flow">
-                <CheckoutWalletStage
-                  availableWalletProviders={availableWalletProviders}
-                  config={config}
-                  expired={expired}
-                  hasManualPayment={hasManualPayment}
-                  isBusy={isBusy}
-                  manualPanelOpen={manualPanelOpen}
-                  paymentRail={paymentRail}
-                  walletCompatibleQuotes={walletCompatibleQuotes}
-                  walletConnected={walletConnected}
-                  walletMetaCopy={walletMetaCopy}
-                  walletSession={walletSession}
-                  onConnectWallet={connectWallet}
-                  onDisconnectWallet={disconnectWallet}
-                  onOpenManualPanel={openManualPanel}
-                />
-
-                <CheckoutManualPanel
-                  amountText={amountText}
-                  checkout={checkout}
-                  config={config}
-                  expired={expired}
-                  hasManualPayment={hasManualPayment}
-                  manualPanelOpen={manualPanelOpen}
-                  payments={payments}
-                  selectedManualRoute={selectedManualRoute}
-                  onClose={closeManualPanel}
-                  onCopyAddress={copyManualAddress}
-                />
-
-                <CheckoutRouteStage
-                  checkout={checkout}
-                  config={config}
-                  expired={expired}
-                  isBusy={isBusy}
-                  manualPanelOpen={manualPanelOpen}
-                  recommendedQuote={recommendedQuote}
-                  routeBalance={routeBalance}
-                  routePayable={routePayable}
-                  walletConnected={walletConnected}
-                  onPayWithWallet={payWithWallet}
-                  onRefreshQuote={refreshQuote}
-                />
-
-                <CheckoutMerchantSummary
-                  checkout={checkout}
-                  logoSrc={logoSrc}
-                  merchantName={merchantName}
-                  setLogoSrc={setLogoSrc}
-                />
-
-                <CheckoutStatusPanel
-                  checkout={checkout}
-                  config={config}
-                  expired={expired}
-                  paymentRail={paymentRail}
-                  pendingPayment={pendingPayment}
-                  statusMessage={statusMessage}
-                  onRefreshQuote={refreshQuote}
-                />
-              </div>
-            )}
+              {checkout?.status === 'paid' ? (
+                <CheckoutSuccessCard />
+              ) : (
+                <div className="payment-flow">
+                  <CheckoutWalletStage />
+                  <CheckoutManualPanel />
+                  <CheckoutRouteStage />
+                  <CheckoutMerchantSummary />
+                  <CheckoutStatusPanel />
+                </div>
+              )}
+            </section>
           </section>
-        </section>
+        </CheckoutPageProvider>
       </main>
     </div>
   )

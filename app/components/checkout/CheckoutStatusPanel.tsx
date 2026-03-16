@@ -1,30 +1,17 @@
 import { chainLabel, explorerTx } from './checkout.shared'
-import {
-  type CheckoutConfig,
-  type CheckoutPayment,
-  type CheckoutRail,
-  type CheckoutRecord,
-} from './checkout.types'
+import { useCheckoutPageContext } from './context/CheckoutPageContext'
 
-type CheckoutStatusPanelProps = {
-  checkout: CheckoutRecord | null | undefined
-  config: CheckoutConfig | null | undefined
-  expired: boolean
-  paymentRail: CheckoutRail
-  pendingPayment: CheckoutPayment | null
-  statusMessage: string
-  onRefreshQuote: () => Promise<void>
-}
+export function CheckoutStatusPanel() {
+  const {
+    checkout,
+    config,
+    expired,
+    paymentRail,
+    pendingPayment,
+    refreshQuote,
+    statusMessage,
+  } = useCheckoutPageContext()
 
-export function CheckoutStatusPanel({
-  checkout,
-  config,
-  expired,
-  paymentRail,
-  pendingPayment,
-  statusMessage,
-  onRefreshQuote,
-}: CheckoutStatusPanelProps) {
   return (
     <div
       className="status-inline muted"
@@ -65,7 +52,7 @@ export function CheckoutStatusPanel({
           <button
             className="secondary-button"
             type="button"
-            onClick={() => void onRefreshQuote()}
+            onClick={() => void refreshQuote()}
           >
             Refresh prices
           </button>

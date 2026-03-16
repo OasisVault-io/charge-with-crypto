@@ -1,21 +1,9 @@
 import { chainLabel, explorerTx, formatUsdAmount } from './checkout.shared'
-import {
-  type CheckoutConfig,
-  type CheckoutPayment,
-  type CheckoutRecord,
-} from './checkout.types'
+import { useCheckoutPageContext } from './context/CheckoutPageContext'
 
-type CheckoutSuccessCardProps = {
-  checkout: CheckoutRecord | null | undefined
-  config: CheckoutConfig | null | undefined
-  payments: CheckoutPayment[]
-}
+export function CheckoutSuccessCard() {
+  const { checkout, config, payments } = useCheckoutPageContext()
 
-export function CheckoutSuccessCard({
-  checkout,
-  config,
-  payments,
-}: CheckoutSuccessCardProps) {
   const confirmedPayment =
     payments.find((payment) => payment.status === 'confirmed') || null
   const confirmedChain =

@@ -1,36 +1,20 @@
 import { chainLabel, explorerTx } from './checkout.shared'
-import {
-  type CheckoutConfig,
-  type CheckoutManualRoute,
-  type CheckoutPayment,
-  type CheckoutRecord,
-} from './checkout.types'
+import { useCheckoutPageContext } from './context/CheckoutPageContext'
 
-type CheckoutManualPanelProps = {
-  amountText: string
-  checkout: CheckoutRecord | null | undefined
-  config: CheckoutConfig | null | undefined
-  expired: boolean
-  hasManualPayment: boolean
-  manualPanelOpen: boolean
-  payments: CheckoutPayment[]
-  selectedManualRoute: CheckoutManualRoute | null
-  onClose: () => void
-  onCopyAddress: () => Promise<void>
-}
+export function CheckoutManualPanel() {
+  const {
+    amountText,
+    checkout,
+    closeManualPanel,
+    config,
+    copyManualAddress,
+    expired,
+    hasManualPayment,
+    manualPanelOpen,
+    payments,
+    selectedManualRoute,
+  } = useCheckoutPageContext()
 
-export function CheckoutManualPanel({
-  amountText,
-  checkout,
-  config,
-  expired,
-  hasManualPayment,
-  manualPanelOpen,
-  payments,
-  selectedManualRoute,
-  onClose,
-  onCopyAddress,
-}: CheckoutManualPanelProps) {
   const confirmedPayment =
     payments.find((payment) => payment.status === 'confirmed') || null
 
@@ -53,7 +37,7 @@ export function CheckoutManualPanel({
           <button
             className="tiny-link manual-switch-link"
             type="button"
-            onClick={onClose}
+            onClick={closeManualPanel}
           >
             Have a hot wallet? Connect it instead
           </button>
@@ -95,7 +79,7 @@ export function CheckoutManualPanel({
             <button
               className="secondary-button"
               type="button"
-              onClick={() => void onCopyAddress()}
+              onClick={() => void copyManualAddress()}
             >
               Copy address
             </button>

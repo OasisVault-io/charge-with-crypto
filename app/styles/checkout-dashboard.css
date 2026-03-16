@@ -742,6 +742,7 @@ textarea:focus {
 .dashboard-page {
 	background: #f4f4f5;
 	color: #1c2028;
+	min-height: 100vh;
 }
 
 .dashboard-page .atmosphere {

@@ -1,6 +1,10 @@
 import { useLoaderData } from 'react-router';
 
 import { DashboardPage } from '../components/dashboard/DashboardPage';
+import {
+  type DashboardConfig,
+  type DashboardData
+} from '../components/dashboard/dashboard.types';
 import { getPublicConfig } from '../lib/services/config.server';
 import { getDashboardData } from '../lib/services/dashboard.server';
 
@@ -15,6 +19,6 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export default function DashboardRoute() {
-  const data = useLoaderData() as { merchantId: string; appConfig: any; dashboardData: any };
+  const data = useLoaderData() as { merchantId: string; appConfig: DashboardConfig; dashboardData: DashboardData };
   return <DashboardPage appConfig={data.appConfig} initialData={data.dashboardData} merchantId={data.merchantId} />;
 }

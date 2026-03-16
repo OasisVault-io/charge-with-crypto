@@ -1,45 +1,24 @@
 import { chainLabel } from './checkout.shared'
-import {
-  type CheckoutConfig,
-  type CheckoutQuote,
-  type CheckoutRail,
-  type WalletProviderOption,
-  type WalletSession,
-} from './checkout.types'
+import { useCheckoutPageContext } from './context/CheckoutPageContext'
 
-type CheckoutWalletStageProps = {
-  availableWalletProviders: WalletProviderOption[]
-  config: CheckoutConfig | null | undefined
-  expired: boolean
-  hasManualPayment: boolean
-  isBusy: boolean
-  manualPanelOpen: boolean
-  paymentRail: CheckoutRail
-  walletCompatibleQuotes: CheckoutQuote[]
-  walletConnected: boolean
-  walletMetaCopy: string
-  walletSession: WalletSession | null
-  onConnectWallet: (providerId?: WalletProviderOption['id']) => Promise<void>
-  onDisconnectWallet: () => void
-  onOpenManualPanel: () => Promise<void>
-}
+export function CheckoutWalletStage() {
+  const {
+    availableWalletProviders,
+    config,
+    connectWallet,
+    disconnectWallet,
+    expired,
+    hasManualPayment,
+    isBusy,
+    manualPanelOpen,
+    openManualPanel,
+    paymentRail,
+    walletCompatibleQuotes,
+    walletConnected,
+    walletMetaCopy,
+    walletSession,
+  } = useCheckoutPageContext()
 
-export function CheckoutWalletStage({
-  availableWalletProviders,
-  config,
-  expired,
-  hasManualPayment,
-  isBusy,
-  manualPanelOpen,
-  paymentRail,
-  walletCompatibleQuotes,
-  walletConnected,
-  walletMetaCopy,
-  walletSession,
-  onConnectWallet,
-  onDisconnectWallet,
-  onOpenManualPanel,
-}: CheckoutWalletStageProps) {
   const scannedNetworks = [
     ...new Set(
       walletCompatibleQuotes.map((quote) => chainLabel(config, quote.chain)),
@@ -65,7 +44,7 @@ export function CheckoutWalletStage({
             <button
               className="tiny-link wallet-disconnect"
               type="button"
-              onClick={onDisconnectWallet}
+              onClick={disconnectWallet}
             >
               Disconnect
             </button>
@@ -84,7 +63,7 @@ export function CheckoutWalletStage({
             className="primary-button"
             disabled={isBusy || expired}
             type="button"
-            onClick={() => void onConnectWallet()}
+            onClick={() => void connectWallet()}
           >
             {isBusy ? 'Connecting…' : 'Connect wallet'}
           </button>
@@ -98,7 +77,7 @@ export function CheckoutWalletStage({
                 disabled={isBusy || expired}
                 key={provider.id}
                 type="button"
-                onClick={() => void onConnectWallet(provider.id)}
+                onClick={() => void connectWallet(provider.id)}
               >
                 {provider.label}
               </button>
@@ -110,7 +89,7 @@ export function CheckoutWalletStage({
             className="tiny-link"
             hidden={manualPanelOpen}
             type="button"
-            onClick={() => void onOpenManualPanel()}
+            onClick={() => void openManualPanel()}
           >
             Don&apos;t have a wallet? Pay manually
           </button>
