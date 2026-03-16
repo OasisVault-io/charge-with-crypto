@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PriceService = void 0;
+exports.isFixedPegAsset = isFixedPegAsset;
 // @ts-nocheck
 const { usdToAssetBaseUnits, baseUnitsToDecimalString } = require('../utils/amounts');
 const STATIC_FALLBACK_PRICES = {
@@ -111,6 +113,7 @@ class PriceService {
         return response.json();
     }
 }
+exports.PriceService = PriceService;
 function isFixedPegAsset(asset) {
     return FIXED_PEG_ASSETS.has(asset);
 }

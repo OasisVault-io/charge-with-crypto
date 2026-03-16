@@ -102,3 +102,5 @@ async function resolveCheckoutFromMerchant({ merchant, config, referenceId, plan
 }
 
 module.exports = { resolveCheckoutFromMerchant, requestJson, buildHeaders };
+
+export { resolveCheckoutFromMerchant, requestJson, buildHeaders };

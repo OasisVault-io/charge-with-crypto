@@ -267,7 +267,7 @@ test('same chain tx hash cannot be replayed across separate checkouts', async ()
   assert.equal(store.getById('checkouts', checkoutB.json.checkout.id).status, 'pending');
 });
 
-test('dashboard routes stay public for reads but require dashboard token for edits', async () => {
+test('dashboard routes hide merchant data until the dashboard token is provided', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-api-auth-'));
   const config = {
     env: 'test',
@@ -313,8 +313,10 @@ test('dashboard routes stay public for reads but require dashboard token for edi
   const unauth = await invokeApi({ method: 'GET', url: '/api/dashboard?merchantId=merchant_default', ctx });
   assert.equal(unauth.statusCode, 200);
   assert.equal(unauth.json.authenticated, false);
-  assert.equal(unauth.json.merchant.id, 'merchant_default');
-  assert.equal('webhookSecret' in unauth.json.merchant, false);
+  assert.equal(unauth.json.locked, true);
+  assert.equal(unauth.json.merchant, null);
+  assert.deepEqual(unauth.json.checkouts, []);
+  assert.deepEqual(unauth.json.payments, []);
 
   const blockedEdit = await invokeApi({
     method: 'PATCH',
@@ -333,6 +335,8 @@ test('dashboard routes stay public for reads but require dashboard token for edi
   });
   assert.equal(authed.statusCode, 200);
   assert.equal(authed.json.authenticated, true);
+  assert.equal(authed.json.locked, false);
+  assert.equal(authed.json.merchant.id, 'merchant_default');
 
   const allowedEdit = await invokeApi({
     method: 'PATCH',

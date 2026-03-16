@@ -1,5 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.bitcoinNetwork = bitcoinNetwork;
+exports.bitcoinScriptTypeForXpub = bitcoinScriptTypeForXpub;
+exports.requireBitcoinAddress = requireBitcoinAddress;
+exports.requireBitcoinXpub = requireBitcoinXpub;
+exports.deriveBitcoinAddress = deriveBitcoinAddress;
+exports.formatBitcoinUri = formatBitcoinUri;
 // @ts-nocheck
 const { address, networks, payments } = require('bitcoinjs-lib');
 const { BIP32Factory } = require('bip32');

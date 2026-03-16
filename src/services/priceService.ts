@@ -118,3 +118,5 @@ function isFixedPegAsset(asset) {
 }
 
 module.exports = { PriceService, isFixedPegAsset };
+
+export { PriceService, isFixedPegAsset };

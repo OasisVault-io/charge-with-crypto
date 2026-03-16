@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 // @ts-nocheck
-const { Contract, HDNodeWallet, JsonRpcProvider, Wallet } = require('ethers');
 const QRCode = require('qrcode');
 const { getActiveQuotesForCheckout } = require('./quoteService');
 const { isFixedPegAsset } = require('./priceService');
@@ -9,11 +8,8 @@ const { recordManualDetectedPayment } = require('./paymentService');
 const { nowIso } = require('../utils/time');
 const { normalizeAddress } = require('../utils/validation');
 const { requestJson } = require('./merchantWebhookService');
+const { createViemScannerProvider, createViemWalletClient, deriveEvmDepositWallet, sponsorAddressForPrivateKey, encodeErc20TransferData } = require('../utils/viemEvm');
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-const ERC20_ABI = [
-    'function balanceOf(address owner) view returns (uint256)',
-    'function transfer(address to, uint256 amount) returns (bool)'
-];
 const DEFAULT_LOOKBACK_BLOCKS = 24;
 const CHAIN_PREFERENCE = ['base', 'arbitrum', 'polygon', 'ethereum'];
 const ASSET_PREFERENCE = ['USDC', 'USDT', 'ETH'];
@@ -38,6 +34,27 @@ function sortLogs(logs) {
         return Number(a.index || a.logIndex || 0) - Number(b.index || b.logIndex || 0);
     });
 }
+function hexDataToBigInt(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (!normalized || normalized === '0x')
+        return 0n;
+    return BigInt(normalized);
+}
+function checkoutCreatedAtMs(checkout) {
+    const value = Date.parse(String(checkout?.createdAt || ''));
+    return Number.isFinite(value) ? value : 0;
+}
+function manualBalanceSnapshot(manualPayment, chain, asset) {
+    const snapshot = manualPayment?.balanceSnapshot?.[chain]?.[asset];
+    if (snapshot == null || snapshot === '')
+        return 0n;
+    try {
+        return BigInt(String(snapshot));
+    }
+    catch {
+        return 0n;
+    }
+}
 class ManualPaymentService {
     constructor({ store, config }) {
         this.store = store;
@@ -54,21 +71,32 @@ class ManualPaymentService {
         this.timer = null;
         this.running = false;
         this.counterLock = Promise.resolve();
-        this.rootXpub = this.xpub ? HDNodeWallet.fromExtendedKey(this.xpub) : null;
-        this.derivationMode = this.rootXpub ? 'xpub' : (this.mnemonic ? 'mnemonic' : 'disabled');
+        this.derivationMode = this.xpub ? 'xpub' : (this.mnemonic ? 'mnemonic' : 'disabled');
         this.sweepMode = this.sweepSignerUrl
             ? 'external_signer'
             : (this.mnemonic && this.sponsorPrivateKey ? 'local' : 'manual');
-        this.sponsorAddress = this.sweepMode === 'local' && this.sponsorPrivateKey ? new Wallet(this.sponsorPrivateKey).address : '';
+        this.sponsorAddress = '';
+        this.ready = this.sweepMode === 'local' && this.sponsorPrivateKey
+            ? sponsorAddressForPrivateKey(this.sponsorPrivateKey)
+                .then((address) => {
+                this.sponsorAddress = address;
+            })
+                .catch(() => { })
+            : Promise.resolve();
         for (const [chain, chainConfig] of Object.entries(config.chains)) {
             const endpoint = process.env[chainConfig.rpcUrlEnv];
             if (!endpoint)
                 continue;
-            this.providers.set(chain, new JsonRpcProvider(endpoint));
+            this.providers.set(chain, {
+                chain,
+                chainConfig,
+                rpcUrl: endpoint,
+                wrapper: null
+            });
         }
     }
     isConfigured() {
-        return Boolean((this.rootXpub || this.mnemonic) && this.providers.size);
+        return Boolean((this.xpub || this.mnemonic) && this.providers.size);
     }
     status() {
         return {
@@ -79,21 +107,29 @@ class ManualPaymentService {
             derivationPath: this.derivationPath
         };
     }
-    provider(chain) {
+    async provider(chain) {
         const provider = this.providers.get(chain);
         if (!provider)
             throw new Error(`missing manual payment rpc for ${chain}`);
-        return provider;
-    }
-    deriveWallet(index, chain) {
-        const numericIndex = Number(index);
-        if (this.rootXpub) {
-            const wallet = this.rootXpub.deriveChild(numericIndex);
-            return chain ? wallet.connect(this.provider(chain)) : wallet;
+        if (typeof provider.getBlockNumber === 'function')
+            return provider;
+        if (!provider.wrapper) {
+            provider.wrapper = await createViemScannerProvider({
+                chain,
+                chainConfig: provider.chainConfig,
+                rpcUrl: provider.rpcUrl
+            });
         }
-        const path = `${this.derivationPath}/${numericIndex}`;
-        const wallet = HDNodeWallet.fromPhrase(this.mnemonic, undefined, path);
-        return chain ? wallet.connect(this.provider(chain)) : wallet;
+        return provider.wrapper;
+    }
+    async deriveWallet(index) {
+        await this.ready;
+        return deriveEvmDepositWallet({
+            xpub: this.xpub,
+            mnemonic: this.mnemonic,
+            derivationPath: this.derivationPath,
+            index
+        });
     }
     canAutoSweep() {
         return this.sweepMode === 'local' || this.sweepMode === 'external_signer';
@@ -105,7 +141,8 @@ class ManualPaymentService {
         const indexes = this.store.find('checkouts', (checkout) => Number.isInteger(checkout?.manualPayment?.derivationIndex))
             .map((checkout) => Number(checkout.manualPayment.derivationIndex))
             .filter((value) => Number.isInteger(value) && value >= 0);
-        return indexes.length ? Math.max(...indexes) + 1 : 0;
+        const startIndex = Math.max(0, Number(this.config.manualPaymentStartIndex || 0));
+        return indexes.length ? Math.max(startIndex, Math.max(...indexes) + 1) : startIndex;
     }
     async reserveDerivationIndex() {
         const pending = this.counterLock;
@@ -113,9 +150,10 @@ class ManualPaymentService {
         this.counterLock = new Promise((resolve) => { release = resolve; });
         await pending;
         try {
+            const startIndex = Math.max(0, Number(this.config.manualPaymentStartIndex || 0));
             const existing = this.store.getById('counters', 'manual_payment_derivation_index');
             if (existing) {
-                const index = Number(existing.value || 0);
+                const index = Math.max(startIndex, Number(existing.value || 0));
                 this.store.update('counters', existing.id, { value: index + 1 });
                 return index;
             }
@@ -128,9 +166,12 @@ class ManualPaymentService {
         }
     }
     merchantEnabledChains(merchant, checkout) {
+        const globallyAllowedChains = uniq(this.config.manualPaymentAllowedChains || []).filter((chain) => this.config.chains[chain]);
         const merchantChains = uniq(merchant?.manualPaymentEnabledChains || merchant?.enabledChains || []);
         const checkoutChains = uniq(checkout?.enabledChains || []);
-        return merchantChains.filter((chain) => checkoutChains.includes(chain) && this.config.chains[chain]);
+        return merchantChains.filter((chain) => checkoutChains.includes(chain) &&
+            this.config.chains[chain] &&
+            (!globallyAllowedChains.length || globallyAllowedChains.includes(chain)));
     }
     manualQuotes(checkout, quotes) {
         const manualPayment = checkout?.manualPayment || {};
@@ -143,6 +184,7 @@ class ManualPaymentService {
         return candidates.sort((a, b) => routeScore(a) - routeScore(b))[0] || null;
     }
     async createCheckoutManualPayment({ merchant, checkout, quotes }) {
+        await this.ready;
         const enabledChains = this.merchantEnabledChains(merchant, checkout).filter((chain) => this.providers.has(chain));
         const acceptedAssets = uniq((quotes || []).filter((quote) => enabledChains.includes(quote.chain) && isFixedPegAsset(quote.asset)).map((quote) => quote.asset));
         const supportedChains = uniq((quotes || []).filter((quote) => enabledChains.includes(quote.chain) && acceptedAssets.includes(quote.asset)).map((quote) => quote.chain));
@@ -165,13 +207,54 @@ class ManualPaymentService {
             };
         }
         const derivationIndex = await this.reserveDerivationIndex();
-        const wallet = this.deriveWallet(derivationIndex);
+        const wallet = await this.deriveWallet(derivationIndex);
         const initializedAt = nowIso();
-        const scanState = Object.fromEntries(supportedChains.map((chain) => [chain, {
-                nextBlock: null,
-                lastScannedBlock: null,
-                initializedAt
-            }]));
+        const supportedRoutes = (quotes || []).filter((quote) => supportedChains.includes(quote.chain) && acceptedAssets.includes(quote.asset));
+        const scanStateEntries = await Promise.all(supportedChains.map(async (chain) => {
+            try {
+                const provider = await this.provider(chain);
+                const latestBlock = await provider.getBlockNumber();
+                return [chain, {
+                        latestBlock,
+                        nextBlock: Math.max(0, Number(latestBlock) + 1),
+                        lastScannedBlock: null,
+                        initializedAt
+                    }];
+            }
+            catch (err) {
+                return [chain, {
+                        nextBlock: null,
+                        lastScannedBlock: null,
+                        initializedAt,
+                        error: err.message
+                    }];
+            }
+        }));
+        const scanState = Object.fromEntries(scanStateEntries);
+        const balanceSnapshotEntries = await Promise.all(supportedChains.map(async (chain) => {
+            const provider = await this.provider(chain).catch(() => null);
+            if (!provider || typeof provider.readErc20Balance !== 'function')
+                return [chain, {}];
+            const routeAssets = uniq(supportedRoutes.filter((quote) => quote.chain === chain).map((quote) => quote.asset));
+            const assetBalances = {};
+            for (const asset of routeAssets) {
+                const tokenAddress = this.config.assets?.[asset]?.addresses?.[chain];
+                if (!tokenAddress)
+                    continue;
+                try {
+                    const balance = await provider.readErc20Balance({
+                        tokenAddress: normalizeAddress(tokenAddress),
+                        owner: wallet.address
+                    });
+                    assetBalances[asset] = balance.toString();
+                }
+                catch (err) {
+                    assetBalances[asset] = '0';
+                }
+            }
+            return [chain, assetBalances];
+        }));
+        const balanceSnapshot = Object.fromEntries(balanceSnapshotEntries);
         return {
             available: true,
             status: 'awaiting_payment',
@@ -180,6 +263,7 @@ class ManualPaymentService {
             enabledChains: supportedChains,
             acceptedAssets,
             scanState,
+            balanceSnapshot,
             sweepStatus: 'idle',
             sponsorAddress: this.sponsorAddress || ''
         };
@@ -231,7 +315,26 @@ class ManualPaymentService {
         }
         let latestCheckout = checkout;
         for (const [chain, chainQuotes] of quotesByChain.entries()) {
-            latestCheckout = await this.scanChainForCheckout(latestCheckout, chain, chainQuotes);
+            try {
+                latestCheckout = await this.scanChainForCheckout(latestCheckout, chain, chainQuotes);
+            }
+            catch (err) {
+                const manualPayment = latestCheckout?.manualPayment || {};
+                const scanState = { ...(manualPayment.scanState || {}) };
+                scanState[chain] = {
+                    ...(scanState[chain] || {}),
+                    lastScanAt: nowIso(),
+                    error: err.message
+                };
+                this.store.update('checkouts', latestCheckout.id, {
+                    manualPayment: {
+                        ...manualPayment,
+                        scanState,
+                        lastScanError: err.message
+                    }
+                });
+                latestCheckout = this.store.getById('checkouts', latestCheckout.id) || latestCheckout;
+            }
             if (latestCheckout.status === 'paid')
                 break;
         }
@@ -241,12 +344,34 @@ class ManualPaymentService {
         const manualPayment = checkout.manualPayment || {};
         const scanState = { ...(manualPayment.scanState || {}) };
         const chainState = { ...(scanState[chain] || {}) };
-        const provider = this.provider(chain);
-        let latestBlock = await provider.getBlockNumber();
+        const provider = await this.provider(chain);
+        const createdAtMs = checkoutCreatedAtMs(checkout);
+        let latestBlock;
+        try {
+            latestBlock = await provider.getBlockNumber();
+        }
+        catch (err) {
+            scanState[chain] = {
+                ...chainState,
+                lastScanAt: nowIso(),
+                error: err.message
+            };
+            this.store.update('checkouts', checkout.id, {
+                manualPayment: {
+                    ...manualPayment,
+                    scanState,
+                    lastScanError: err.message
+                }
+            });
+            return this.store.getById('checkouts', checkout.id) || checkout;
+        }
         let confirmedToBlock = Math.max(0, latestBlock - Math.max(0, this.config.minConfirmations - 1));
         let fromBlock = Number.isInteger(chainState.nextBlock) ? chainState.nextBlock : null;
+        // For a freshly-created checkout, start watching only after the current head
+        // instead of looking back into recent history. This avoids treating transfers
+        // already present in the current head block as payment for a brand-new checkout.
         if (fromBlock == null)
-            fromBlock = Math.max(0, confirmedToBlock - DEFAULT_LOOKBACK_BLOCKS);
+            fromBlock = Math.max(0, latestBlock + 1);
         if (fromBlock > confirmedToBlock) {
             scanState[chain] = { ...chainState, latestBlock, nextBlock: fromBlock };
             this.store.update('checkouts', checkout.id, {
@@ -264,6 +389,24 @@ class ManualPaymentService {
             const tokenAddress = assetConfig?.addresses?.[chain] ? normalizeAddress(assetConfig.addresses[chain]) : '';
             if (!tokenAddress)
                 continue;
+            if (typeof provider.readErc20Balance === 'function') {
+                let currentBalance = null;
+                try {
+                    currentBalance = await provider.readErc20Balance({
+                        tokenAddress,
+                        owner: manualPayment.address
+                    });
+                }
+                catch (err) {
+                    currentBalance = null;
+                }
+                if (currentBalance != null) {
+                    const baselineBalance = manualBalanceSnapshot(manualPayment, chain, quote.asset);
+                    const expectedAmountBaseUnits = BigInt(quote.cryptoAmountBaseUnits);
+                    if (BigInt(currentBalance) - baselineBalance < expectedAmountBaseUnits)
+                        continue;
+                }
+            }
             const logResult = await this.getLogsWithRangeRecovery({
                 provider,
                 tokenAddress,
@@ -298,15 +441,28 @@ class ManualPaymentService {
             finalLastScannedBlock = scanToBlock;
             finalNextBlock = scanToBlock + 1;
             for (const log of sortLogs(logs)) {
-                const observedAmountBaseUnits = BigInt(log.data || '0x0');
+                const observedAmountBaseUnits = hexDataToBigInt(log.data);
                 const expectedAmountBaseUnits = BigInt(quote.cryptoAmountBaseUnits);
                 if (observedAmountBaseUnits < expectedAmountBaseUnits)
                     continue;
+                let blockTimestampMs = 0;
+                if (createdAtMs) {
+                    try {
+                        const block = await provider.getBlock({ blockNumber: log.blockNumber });
+                        blockTimestampMs = Number(block?.timestamp || 0) * 1000;
+                    }
+                    catch (err) {
+                        continue;
+                    }
+                    if (!blockTimestampMs || blockTimestampMs < createdAtMs)
+                        continue;
+                }
                 candidates.push({
                     quote,
                     tokenAddress,
                     txHash: log.transactionHash,
                     blockNumber: Number(log.blockNumber),
+                    blockTimestampMs,
                     observedAmountBaseUnits,
                     fromAddress: topicAddress(log.topics?.[1])
                 });
@@ -483,7 +639,8 @@ class ManualPaymentService {
         const derivationIndex = checkout.manualPayment.derivationIndex;
         if (!treasuryAddress || !Number.isInteger(derivationIndex))
             return;
-        const provider = this.provider(chain);
+        await this.ready;
+        const provider = await this.provider(chain);
         const assetConfig = this.config.assets[asset];
         if (!assetConfig || assetConfig.type !== 'erc20') {
             this.store.update('payments', payment.id, {
@@ -497,10 +654,12 @@ class ManualPaymentService {
             return;
         }
         const tokenAddress = normalizeAddress(assetConfig.addresses?.[chain]);
-        const childWallet = this.deriveWallet(derivationIndex, chain);
+        const childWallet = await this.deriveWallet(derivationIndex);
         const fromAddress = childWallet.address;
-        const tokenReader = new Contract(tokenAddress, ERC20_ABI, provider);
-        const tokenBalance = BigInt(await tokenReader.balanceOf(fromAddress));
+        const tokenBalance = BigInt(await provider.readErc20Balance({
+            tokenAddress,
+            owner: fromAddress
+        }));
         if (tokenBalance <= 0n) {
             this.store.update('payments', payment.id, {
                 sweep: {
@@ -515,11 +674,12 @@ class ManualPaymentService {
         }
         const feeData = await provider.getFeeData().catch(() => null);
         const feeOverrides = feeData ? this.feeOverrides(feeData) : null;
-        const txRequest = await tokenReader.transfer.populateTransaction(treasuryAddress, tokenBalance);
-        const gasLimit = BigInt(await provider.estimateGas({
-            from: fromAddress,
-            to: tokenAddress,
-            data: txRequest.data
+        const txData = await encodeErc20TransferData({ to: treasuryAddress, amount: tokenBalance });
+        const gasLimit = BigInt(await provider.estimateErc20TransferGas({
+            tokenAddress,
+            account: fromAddress,
+            to: treasuryAddress,
+            amount: tokenBalance
         }));
         if (this.sweepMode === 'external_signer') {
             const sweepResult = await this.requestExternalSweep({
@@ -577,33 +737,43 @@ class ManualPaymentService {
             });
             return;
         }
-        const sponsorWallet = new Wallet(this.sponsorPrivateKey, provider);
+        const rpcUrl = this.providers.get(chain)?.rpcUrl || '';
+        const sponsorWallet = await createViemWalletClient({
+            chain,
+            chainConfig: this.config.chains[chain],
+            rpcUrl,
+            privateKey: this.sponsorPrivateKey
+        });
         const requiredNative = ((gasLimit * feeOverrides.unitPrice) * 12n) / 10n;
         const currentNative = await provider.getBalance(fromAddress);
         let fundingTxHash = payment.sweep?.fundingTxHash || null;
         if (currentNative < requiredNative) {
             const topUpAmount = requiredNative - currentNative;
-            const fundingTx = await sponsorWallet.sendTransaction({
+            fundingTxHash = await sponsorWallet.sendTransaction({
                 to: fromAddress,
                 value: topUpAmount,
                 ...feeOverrides.tx
             });
-            fundingTxHash = fundingTx.hash;
-            await fundingTx.wait(this.config.minConfirmations);
+            await provider.waitForTransactionReceipt({ hash: fundingTxHash, confirmations: this.config.minConfirmations });
         }
-        const signerWallet = this.deriveWallet(derivationIndex, chain);
-        const sweepTx = await signerWallet.sendTransaction({
+        const signerWallet = await createViemWalletClient({
+            chain,
+            chainConfig: this.config.chains[chain],
+            rpcUrl,
+            privateKey: childWallet.privateKey
+        });
+        const sweepTxHash = await signerWallet.sendTransaction({
             to: tokenAddress,
-            data: txRequest.data,
-            gasLimit,
+            data: txData,
+            gas: gasLimit,
             ...feeOverrides.tx
         });
-        await sweepTx.wait(this.config.minConfirmations);
+        await provider.waitForTransactionReceipt({ hash: sweepTxHash, confirmations: this.config.minConfirmations });
         this.store.update('payments', payment.id, {
             sweep: {
                 status: 'confirmed',
                 fundingTxHash,
-                txHash: sweepTx.hash,
+                txHash: sweepTxHash,
                 amountBaseUnits: tokenBalance.toString(),
                 treasuryAddress,
                 sweptAt: nowIso(),
@@ -615,7 +785,7 @@ class ManualPaymentService {
                 ...(checkout.manualPayment || {}),
                 sweepStatus: 'confirmed',
                 sweptAt: nowIso(),
-                sweepTxHash: sweepTx.hash,
+                sweepTxHash: sweepTxHash,
                 fundingTxHash: fundingTxHash || ''
             }
         });

@@ -1,5 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.verifyPaymentAndRecord = verifyPaymentAndRecord;
+exports.reconcilePendingCheckoutPayments = reconcilePendingCheckoutPayments;
+exports.recordManualDetectedPayment = recordManualDetectedPayment;
+exports.recordConfirmedExternalPayment = recordConfirmedExternalPayment;
 // @ts-nocheck
 const { nowIso } = require('../utils/time');
 const { deliverWebhook } = require('./webhookService');
@@ -24,8 +28,11 @@ async function emitPaymentConfirmed({ store, config, checkout, quote, payment, c
         type: 'payment.confirmed',
         data: {
             checkoutId: checkout.id,
+            productId: checkout.productId || null,
             referenceId: checkout.referenceId || null,
             planId: checkout.planId || null,
+            quantity: Number(checkout.quantity || 1),
+            purchaseFlow: checkout.purchaseFlow || 'hosted_checkout',
             title: checkout.title || checkout.orderId,
             description: checkout.description || '',
             merchantId: checkout.merchantId,
@@ -238,8 +245,60 @@ async function recordManualDetectedPayment({ store, config, checkout, quote, txH
     await confirmCheckoutIfNeeded({ store, config, checkout, quote, payment, chain: quote.chain });
     return payment;
 }
+async function recordConfirmedExternalPayment({ store, config, checkout, quote, txHash, walletAddress, recipientAddress, method = 'external', verification = {} }) {
+    const normalizedTxHash = normalizeChainTxHash(txHash, quote.chain);
+    const conflicting = conflictingPaymentForTx({
+        store,
+        checkoutId: checkout.id,
+        chain: quote.chain,
+        txHash: normalizedTxHash
+    });
+    if (conflicting)
+        throw new Error('tx hash already linked to another checkout');
+    const existing = existingPaymentForCheckoutTx({
+        store,
+        checkoutId: checkout.id,
+        chain: quote.chain,
+        txHash: normalizedTxHash
+    });
+    const mergedVerification = {
+        ok: true,
+        reason: 'confirmed',
+        ...verification,
+        recipientAddress,
+        senderAddress: walletAddress || verification.senderAddress || null
+    };
+    if (existing) {
+        const updated = store.update('payments', existing.id, {
+            walletAddress: walletAddress || existing.walletAddress || null,
+            recipientAddress,
+            chain: quote.chain,
+            asset: quote.asset,
+            method,
+            status: 'confirmed',
+            verification: mergedVerification
+        });
+        await confirmCheckoutIfNeeded({ store, config, checkout, quote, payment: updated, chain: quote.chain });
+        return updated;
+    }
+    const payment = store.insert('payments', {
+        checkoutId: checkout.id,
+        quoteId: quote.id,
+        txHash: normalizedTxHash,
+        walletAddress: walletAddress || null,
+        method,
+        chain: quote.chain,
+        asset: quote.asset,
+        recipientAddress,
+        status: 'confirmed',
+        verification: mergedVerification
+    });
+    await confirmCheckoutIfNeeded({ store, config, checkout, quote, payment, chain: quote.chain });
+    return payment;
+}
 module.exports = {
     verifyPaymentAndRecord,
     reconcilePendingCheckoutPayments,
-    recordManualDetectedPayment
+    recordManualDetectedPayment,
+    recordConfirmedExternalPayment
 };

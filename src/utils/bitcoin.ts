@@ -87,3 +87,5 @@ module.exports = {
   deriveBitcoinAddress,
   formatBitcoinUri
 };
+
+export { bitcoinNetwork, bitcoinScriptTypeForXpub, requireBitcoinAddress, requireBitcoinXpub, deriveBitcoinAddress, formatBitcoinUri };

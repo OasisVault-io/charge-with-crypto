@@ -11,12 +11,13 @@ const mimeByExt = {
     '.txt': 'text/plain; charset=utf-8',
     '.svg': 'image/svg+xml'
 };
-function sendJson(res, statusCode, data) {
+function sendJson(res, statusCode, data, headers = {}) {
     const body = JSON.stringify(data);
     res.writeHead(statusCode, {
         'content-type': 'application/json; charset=utf-8',
         'content-length': Buffer.byteLength(body),
-        'cache-control': 'no-store'
+        'cache-control': 'no-store',
+        ...headers
     });
     res.end(body);
 }

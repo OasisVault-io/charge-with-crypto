@@ -87,3 +87,5 @@ function getLatestQuoteForSelection(store, checkoutId, selection = {}) {
 }
 
 module.exports = { createQuote, getActiveQuote, getActiveQuotesForCheckout, getQuoteById, getLatestQuoteForSelection, quoteExpirySecondsForRoute };
+
+export { createQuote, getActiveQuote, getActiveQuotesForCheckout, getQuoteById, getLatestQuoteForSelection, quoteExpirySecondsForRoute };

@@ -8,7 +8,7 @@ const { nowIso } = require('../utils/time');
 class JsonStore {
     constructor(dataDir) {
         this.dataDir = dataDir;
-        this.collections = ['merchants', 'checkouts', 'quotes', 'payments', 'events', 'webhook_deliveries'];
+        this.collections = ['merchants', 'products', 'checkouts', 'quotes', 'payments', 'events', 'webhook_deliveries'];
         this.ensure();
     }
     ensure() {

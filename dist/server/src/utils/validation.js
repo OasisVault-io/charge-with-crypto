@@ -1,5 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.isAddress = isAddress;
+exports.isTxHash = isTxHash;
+exports.isBitcoinTxHash = isBitcoinTxHash;
+exports.isChainTxHash = isChainTxHash;
+exports.normalizeChainTxHash = normalizeChainTxHash;
+exports.requireAddress = requireAddress;
+exports.requireChainAddress = requireChainAddress;
+exports.requireEnum = requireEnum;
+exports.normalizeAddress = normalizeAddress;
+exports.normalizeChainAddress = normalizeChainAddress;
+exports.requireOptionalString = requireOptionalString;
+exports.requireUrl = requireUrl;
 // @ts-nocheck
 const { requireBitcoinAddress } = require('./bitcoin');
 function isHex(value, bytes) {

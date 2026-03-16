@@ -1,60 +1,71 @@
-# Charge With Crypto Architecture
+# Architecture
 
-## components
-- `src/server.ts`: backend http server and api entrypoint. In production it serves the built Vite client from `dist/client`.
-- `client/*.html` + `client/*.ts`: Vite multi-page frontend entries for home, checkout, and dashboard.
-- `src/routes/api.ts`: checkout, merchant, and manual payment routes.
-- `src/store/sqliteStore.ts`: sqlite persistence using `node:sqlite`.
-- `src/services/quoteService.ts`: quote creation and expiry enforcement.
-- `src/services/balanceService.ts`: rpc-backed wallet balance scanning across supported `chain + asset` routes.
-- `src/services/provider.ts`: onchain provider interface and registry.
-- `src/services/evmVerifier.ts`: evm rpc verification for native and erc20 transfers.
-- `src/services/paymentService.ts`: payment confirmation and event creation.
-- `src/services/manualPaymentService.ts`: deterministic manual deposit derivation, onchain transfer detection, and sweep orchestration.
-- `src/services/merchantWebhookService.ts`: webhook based checkout resolution from a merchant reference id.
-- `src/services/webhookService.ts`: signed webhook delivery and delivery logging.
+## Current ownership
 
-## checkout architecture
-1. checkout is created with merchant settlement addresses in `recipientByChain`.
-2. if the merchant enabled manual pay and the server has the manual payment engine configured, Charge With Crypto derives one unique EVM deposit address for that checkout and stores it in `manualPayment`.
-3. quote(s) are generated per enabled `chain + asset` route.
-4. checkout ui renders a single review screen and keeps the settlement recipient hidden in the primary flow.
-5. after wallet connect, the backend scans balances across enabled evm chains and accepted assets over rpc and recommends one payable route.
-6. the main pay action submits the onchain transaction from the injected wallet to the settlement recipient.
-7. manual pay is secondary only, hidden behind an explicit reveal, and shows the unique derived deposit address plus qr code for supported stablecoin routes.
-8. the manual payment monitor scans ERC-20 `Transfer` logs to that address across enabled chains, confirms matching deposits, then marks the checkout `paid`.
-9. successful verification marks checkout `paid`, stores a payment record, emits `payment.confirmed`, and attempts webhook delivery.
-10. if local sweeping is enabled, the sweeper funds gas to the derived deposit wallet when needed and transfers the token balance to the merchant treasury address on that chain.
-11. if a merchant uses `POST /api/checkouts/resolve`, Charge With Crypto first calls the merchant webhook with a signed `checkout.resolve` event including optional `planId` and turns the response into a checkout session.
-12. stablecoin quotes for `USDC` and `USDT` are fixed at `1 USD`, so those routes do not expire and do not need customer-facing refresh controls.
+The important boundary is:
 
-## manual payment model
-- merchant responsibility: choose which chains expose manual pay and keep the treasury settlement addresses current.
-- server responsibility: protect any legacy mnemonic/sponsor key it holds, or alternatively hold only an EVM xpub and leave sweeping outside the app.
-- Charge With Crypto responsibility: derive one unique deposit address per checkout, expose it in the secondary manual panel, detect matching deposits onchain, and either sweep confirmed balances or mark them for external/manual sweeping.
-- current allocation rule: next unused derivation index under the configured HD path.
-- current release rule: none. derived addresses are treated as single use identifiers in v1.
+- `app/` owns the React Router v7 route tree and canonical server-facing structure
+- `src/` still owns most of the checkout engine, store, and blockchain services
 
-## security notes
-- connected wallet path remains non custodial. Charge With Crypto does not sign for the customer.
-- manual pay is treasury infrastructure. if you use legacy local EVM sweeping, the server must secure the mnemonic and sponsor key. in xpub-only mode, sweeping authority stays outside this app.
-- webhook signature header: `x-charge-with-crypto-signature`.
-- signature input: `${timestamp}.${raw_json_body}`.
+## Main directories
 
-## data model additions
-### merchant
-- `manualPaymentEnabledChains: string[]`
-- `defaultAcceptedAssets: string[]`
-- `brandName`, `logoUrl`, `checkoutHeadline`, `checkoutDescription`
-- `plans: Array<{ id, title, amountUsd, description, enabledChains, acceptedAssets }>`
+### `app/`
 
-### checkout
-- `acceptedAssets: string[]`
-- `planId?: string`
-- `manualPayment: { available, status, derivationIndex, address, enabledChains, acceptedAssets, scanState, sweepStatus }`
+- `app/routes/*`
+  RR7 UI routes and resource routes
+- `app/lib/services/*`
+  server-side orchestration for checkout, dashboard, and config flows
+- `app/lib/server/runtime.ts`
+  bridge into the shared engine in `src/`
+- `app/components/*`
+  RR7 route components for the dashboard, checkout, and shared client helpers
+- `app/app.css`
+  Tailwind v4 theme layer and RR7 base tokens
+- `app/styles/checkout-dashboard.css`
+  checkout and dashboard styling used by the RR7 route components
 
-## explicit tradeoffs
-- this keeps the primary wallet flow non custodial for the customer, and lets EVM manual pay run in either xpub-only or legacy mnemonic mode.
-- this handles deterministic derivation and detection for EVM stablecoins only; sweeping can be local, external, or fully manual.
-- manual pay is intentionally limited to fixed stablecoin routes because volatile asset quotes do not fit an address-and-qr fallback well.
-- sweep reliability still depends on a funded sponsor wallet and healthy chain RPC access.
+### `src/`
+
+- `src/appContext.ts`
+  shared backend context creation
+- `src/store/sqliteStore.ts`
+  Drizzle-backed collection store over SQLite
+- `src/db/*`
+  Drizzle schema and database client setup
+- `src/services/quoteService.ts`
+  route quote creation and expiry
+- `src/services/paymentService.ts`
+  verification, payment records, and confirmation
+- `src/services/productService.ts`
+  stable sellables that can mint human checkouts or x402 agent access
+- `src/services/x402Service.ts`
+  Base USDC x402 seller flow, checkout-bound agent access, and Bazaar metadata
+- `src/services/mcpService.ts`
+  MCP server for product discovery and orchestration
+- `src/services/manualPaymentService.ts`
+  deterministic EVM manual-pay derivation, detection, and optional sweeping
+- `src/services/bitcoinManualPaymentService.ts`
+  Bitcoin manual-pay support
+- `src/services/merchantWebhookService.ts`
+  merchant checkout resolution
+- `src/services/webhookService.ts`
+  signed webhook delivery
+- `src/services/evmVerifier.ts`
+  EVM payment verification
+- `src/services/bitcoinVerifier.ts`
+  Bitcoin verification
+
+## Request flow today
+
+- `app/routes/*` renders the new route tree
+- `app/routes/api/*` now serves the core API surface for the current checkout/dashboard flow
+- `app/routes/api/products*`, `app/routes/api/x402*`, and `app/routes/mcp.ts` expose the business-owner sellable surfaces
+- route loaders bootstrap dashboard and checkout state for native RR7 components
+
+## Remaining consolidation
+
+The frontend now runs only through the RR7 app. The remaining structural work is backend-oriented:
+
+1. keep moving shared orchestration into `app/lib/services/*`
+2. reduce `src/routes/api.ts` to a compatibility layer or retire it
+3. keep `src/services/*` only as shared domain logic, or move those into `app/lib/*` as the migration finishes

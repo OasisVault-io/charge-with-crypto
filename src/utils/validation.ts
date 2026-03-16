@@ -87,3 +87,18 @@ module.exports = {
   requireOptionalString,
   requireUrl
 };
+
+export {
+  isAddress,
+  isTxHash,
+  isBitcoinTxHash,
+  isChainTxHash,
+  normalizeChainTxHash,
+  requireAddress,
+  requireChainAddress,
+  requireEnum,
+  normalizeAddress,
+  normalizeChainAddress,
+  requireOptionalString,
+  requireUrl
+};
