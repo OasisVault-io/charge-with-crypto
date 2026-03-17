@@ -3,19 +3,45 @@ import https from 'node:https'
 import { URL } from 'node:url'
 import { hmacSha256 } from '../../utils/crypto'
 import { nowIso } from '../../utils/time'
-import { type AnyRecord } from '../shared/types'
+import {
+  type AnyRecord,
+  type AppConfig,
+  type MerchantLike,
+  type ResolvedCheckoutLike,
+} from '../shared/types'
 
-function buildHeaders({ signature, timestamp, body, eventType }) {
+function buildHeaders({
+  signature,
+  timestamp,
+  body,
+  eventType,
+}: {
+  signature: string
+  timestamp: number | string
+  body: string
+  eventType: string
+}): Record<string, string> {
   return {
     'content-type': 'application/json',
-    'content-length': Buffer.byteLength(body),
+    'content-length': String(Buffer.byteLength(body)),
     'x-charge-with-crypto-signature': `t=${timestamp},v1=${signature}`,
     'x-charge-with-crypto-timestamp': String(timestamp),
     'x-charge-with-crypto-event': eventType,
   }
 }
 
-function requestJson(endpoint, { body, headers, timeoutMs }) {
+function requestJson(
+  endpoint: string,
+  {
+    body,
+    headers,
+    timeoutMs,
+  }: {
+    body: string | Buffer
+    headers: Record<string, string>
+    timeoutMs?: number
+  },
+): Promise<{ statusCode: number; body: unknown; raw: string }> {
   return new Promise((resolve, reject) => {
     const url = new URL(endpoint)
     const transport = url.protocol === 'https:' ? https : http
@@ -29,16 +55,18 @@ function requestJson(endpoint, { body, headers, timeoutMs }) {
         headers,
       },
       (res) => {
-        const chunks = []
-        res.on('data', (chunk) => chunks.push(chunk))
+        const chunks: Buffer[] = []
+        res.on('data', (chunk) => chunks.push(Buffer.from(chunk)))
         res.on('end', () => {
           const raw = Buffer.concat(chunks).toString('utf8')
-          let parsed = null
+          let parsed: unknown = null
           if (raw) {
             try {
               parsed = JSON.parse(raw)
             } catch (err) {
-              reject(new Error(`merchant_webhook_invalid_json:${err.message}`))
+              const message =
+                err instanceof Error ? err.message : String(err)
+              reject(new Error(`merchant_webhook_invalid_json:${message}`))
               return
             }
           }
@@ -59,7 +87,12 @@ async function resolveCheckoutFromMerchant({
   config,
   referenceId,
   planId = '',
-}) {
+}: {
+  merchant: MerchantLike
+  config: AppConfig
+  referenceId: string
+  planId?: string
+}): Promise<ResolvedCheckoutLike> {
   if (!merchant?.webhookUrl) throw new Error('merchant missing webhook url')
 
   if (merchant.webhookUrl.startsWith('mock://')) {
@@ -124,7 +157,7 @@ async function resolveCheckoutFromMerchant({
   const resolved = resolvedResponse.body?.checkout || resolvedResponse.body
   if (!resolved || typeof resolved !== 'object')
     throw new Error('merchant_webhook_empty_checkout')
-  return resolved
+  return resolved as ResolvedCheckoutLike
 }
 
 export { resolveCheckoutFromMerchant, requestJson, buildHeaders }

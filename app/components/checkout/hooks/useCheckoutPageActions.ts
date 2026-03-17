@@ -97,9 +97,14 @@ export const useCheckoutPageActions = ({
       return
     }
     if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(address)
-      setStatusMessage('Manual address copied.')
-      window.setTimeout(() => setStatusMessage(''), 1200)
+      try {
+        await navigator.clipboard.writeText(address)
+        setStatusMessage('Manual address copied.')
+        window.setTimeout(() => setStatusMessage(''), 1200)
+      } catch (error) {
+        console.error('Failed to copy manual address to clipboard', error)
+        setStatusMessage('Failed to copy address.')
+      }
     }
   }
 
@@ -266,10 +271,12 @@ export const useCheckoutPageActions = ({
         }
         const provider = xverse.DefaultAdaptersInfo?.xverse?.id
         if (provider) xverse.setDefaultProvider(provider)
-        const amount = Number(recommendedQuote.cryptoAmountBaseUnits)
-        if (!Number.isSafeInteger(amount)) {
+        const satoshis = BigInt(recommendedQuote.cryptoAmountBaseUnits)
+        const maxSafeInteger = BigInt(Number.MAX_SAFE_INTEGER)
+        if (satoshis > maxSafeInteger || satoshis < -maxSafeInteger) {
           throw new Error('bitcoin amount exceeds safe integer range')
         }
+        const amount = Number(satoshis)
         const response = await xverse.request('sendTransfer', {
           recipients: [
             {

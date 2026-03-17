@@ -181,6 +181,7 @@ async function confirm(prompt: string): Promise<boolean> {
 }
 
 function readJsonRow(db: Database.Database, table: string, id: string) {
+  if (table !== 'checkouts') return null
   const row = db.prepare(`select json from ${table} where id = ?`).get(id) as
     | { json?: string }
     | undefined
@@ -305,6 +306,7 @@ async function main() {
     )
 
   const rpcEnvName = chainsConfig.chains?.[context.chain]?.rpcUrlEnv
+  if (!rpcEnvName) fail(`Missing rpcUrlEnv for chain ${context.chain}.`)
   const rpcUrl = String(process.env[rpcEnvName] || '').trim()
   if (!rpcUrl) fail(`Missing ${rpcEnvName} for chain ${context.chain}.`)
 

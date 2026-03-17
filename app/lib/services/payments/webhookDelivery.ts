@@ -19,6 +19,8 @@ type RequestOnceResponse = {
   body: string
 }
 
+const MAX_RESPONSE_BYTES = 1_048_576
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -84,6 +86,7 @@ async function deliverWebhook({
       const response = await requestOnce(
         endpoint,
         body,
+        event.type,
         signature,
         timestamp,
         config.webhookTimeoutMs,
@@ -162,6 +165,7 @@ function dispatchWebhook(
 function requestOnce(
   endpoint: string,
   body: string,
+  eventType: string,
   signature: string,
   timestamp: number,
   timeoutMs: number,
@@ -169,6 +173,12 @@ function requestOnce(
   return new Promise<RequestOnceResponse>((resolve, reject) => {
     const url = new URL(endpoint)
     const transport = url.protocol === 'https:' ? https : http
+    let settled = false
+    const rejectOnce = (error: Error) => {
+      if (settled) return
+      settled = true
+      reject(error)
+    }
 
     const req = transport.request(
       {
@@ -181,24 +191,48 @@ function requestOnce(
           'content-type': 'application/json',
           'x-charge-with-crypto-signature': `t=${timestamp},v1=${signature}`,
           'x-charge-with-crypto-timestamp': String(timestamp),
-          'x-charge-with-crypto-event': 'payment.confirmed',
+          'x-charge-with-crypto-event': eventType,
           'content-length': Buffer.byteLength(body),
         },
       },
       (res) => {
         const chunks: Buffer[] = []
-        res.on('data', (chunk) => chunks.push(Buffer.from(chunk)))
-        res.on('end', () =>
+        let byteCount = 0
+        res.on('data', (chunk) => {
+          if (settled) return
+          const buffer = Buffer.from(chunk)
+          byteCount += buffer.length
+          if (byteCount > MAX_RESPONSE_BYTES) {
+            res.removeAllListeners('data')
+            res.removeAllListeners('end')
+            req.destroy(new Error('Response body too large'))
+            res.destroy(new Error('Response body too large'))
+            rejectOnce(new Error('Response body too large'))
+            return
+          }
+          chunks.push(buffer)
+        })
+        res.on('error', (error) =>
+          rejectOnce(error instanceof Error ? error : new Error(String(error))),
+        )
+        res.on('end', () => {
+          if (settled) return
+          settled = true
           resolve({
             statusCode: res.statusCode || 0,
             body: Buffer.concat(chunks).toString('utf8'),
-          }),
-        )
+          })
+        })
       },
     )
 
-    req.on('timeout', () => req.destroy(new Error('webhook_timeout')))
-    req.on('error', reject)
+    req.on('timeout', () => {
+      req.destroy(new Error('webhook_timeout'))
+      rejectOnce(new Error('webhook_timeout'))
+    })
+    req.on('error', (error) =>
+      rejectOnce(error instanceof Error ? error : new Error(String(error))),
+    )
     req.write(body)
     req.end()
   })

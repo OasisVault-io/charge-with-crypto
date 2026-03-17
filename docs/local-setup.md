@@ -68,6 +68,5 @@ npm start
 
 ```bash
 npm run typecheck
-npm run typecheck
 npm test
 ```

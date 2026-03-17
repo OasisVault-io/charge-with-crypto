@@ -1,4 +1,4 @@
-import { type secp256k1 as Secp256k1 } from '@noble/curves/secp256k1'
+import * as ecc from 'tiny-secp256k1'
 import { type Address, type Chain, type Hex } from 'viem'
 import type * as Viem from 'viem'
 import type * as ViemAccounts from 'viem/accounts'
@@ -22,7 +22,6 @@ type ViemModules = {
   HDKey: typeof ViemAccounts.HDKey
   privateKeyToAccount: typeof ViemAccounts.privateKeyToAccount
   publicKeyToAddress: typeof ViemAccounts.publicKeyToAddress
-  secp256k1: typeof Secp256k1
   chains: typeof ViemChains
 }
 
@@ -91,8 +90,7 @@ async function loadViemModules(): Promise<ViemModules> {
       import('viem'),
       import('viem/accounts'),
       import('viem/chains'),
-      import('@noble/curves/secp256k1'),
-    ]).then(([viem, accounts, chains, noble]) => ({
+    ]).then(([viem, accounts, chains]) => ({
       createPublicClient: viem.createPublicClient,
       createWalletClient: viem.createWalletClient,
       defineChain: viem.defineChain,
@@ -104,7 +102,6 @@ async function loadViemModules(): Promise<ViemModules> {
       HDKey: accounts.HDKey,
       privateKeyToAccount: accounts.privateKeyToAccount,
       publicKeyToAddress: accounts.publicKeyToAddress,
-      secp256k1: noble.secp256k1,
       chains,
     }))
   }
@@ -245,7 +242,7 @@ async function deriveEvmDepositWallet({
   index = 0,
 }: DeriveWalletInput = {}): Promise<DerivedWalletLike> {
   const numericIndex = Number(index)
-  const { HDKey, mnemonicToAccount, publicKeyToAddress, secp256k1, toHex } =
+  const { HDKey, mnemonicToAccount, publicKeyToAddress, toHex } =
     await loadViemModules()
 
   if (xpub) {
@@ -258,10 +255,15 @@ async function deriveEvmDepositWallet({
       typeof child.publicKey === 'string'
         ? child.publicKey
         : toHex(child.publicKey)
+    const uncompressedPublicKeyBytes = ecc.pointCompress(
+      Buffer.from(compressedPublicKey.slice(2), 'hex'),
+      false,
+    )
+    if (!uncompressedPublicKeyBytes) {
+      throw new Error(`failed_to_decompress_public_key_${numericIndex}`)
+    }
     const uncompressedPublicKey = `0x${Buffer.from(
-      secp256k1.ProjectivePoint.fromHex(
-        compressedPublicKey.slice(2),
-      ).toRawBytes(false),
+      uncompressedPublicKeyBytes,
     ).toString('hex')}`
     return {
       address: publicKeyToAddress(asHex(uncompressedPublicKey)),

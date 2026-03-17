@@ -25,7 +25,19 @@ const projectRoot =
 loadEnv(path.join(projectRoot, '.env'))
 
 const chainsConfigPath = path.join(projectRoot, 'config', 'chains.json')
-const chainsConfig = JSON.parse(fs.readFileSync(chainsConfigPath, 'utf8'))
+let chainsConfig
+try {
+  chainsConfig = JSON.parse(fs.readFileSync(chainsConfigPath, 'utf8'))
+} catch (error) {
+  console.error('Failed to load chains config', {
+    projectRoot,
+    chainsConfigPath,
+    message: error instanceof Error ? error.message : String(error),
+  })
+  throw new Error(
+    `Unable to load chain configuration from ${chainsConfigPath}. Check that the file exists and contains valid JSON.`,
+  )
+}
 
 const stringOrDefault = (fallback) => z.string().trim().default(fallback)
 const urlString = (fallback) => z.string().trim().url().default(fallback)

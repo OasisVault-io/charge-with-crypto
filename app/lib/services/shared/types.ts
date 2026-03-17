@@ -414,6 +414,7 @@ type StoreLike = {
     collection: C,
     id: string,
   ): CollectionMap[C] | null
+  delete<C extends CollectionName>(collection: C, id: string): boolean
   insert<C extends CollectionName>(
     collection: C,
     item: InsertableRecord<CollectionMap[C]>,
@@ -440,6 +441,7 @@ type Repository<T extends EntityRecord> = {
   list(): T[]
   find(predicate: (item: T) => boolean): T[]
   findOne(predicate: (item: T) => boolean): T | null
+  delete(id: string): boolean
   insert(item: InsertableRecord<T>): T
   update(id: string, patch: PatchRecord<T>): T | null
 }

@@ -26,6 +26,7 @@ type DashboardPageState = {
   merchantDraft: DashboardMerchantDraft
   checkoutDraft: DashboardCheckoutDraft
   createdCheckout: DashboardCreatedCheckout | null
+  checkoutStatus: string
   merchantStatus: string
   authStatus: string
   expandedPlanIndex: number | null
@@ -68,6 +69,10 @@ type DashboardPageAction =
       value: DashboardCreatedCheckout | null
     }
   | {
+      type: 'checkout_status_set'
+      value: string
+    }
+  | {
       type: 'merchant_status_set'
       value: string
     }
@@ -82,6 +87,62 @@ type DashboardPageAction =
   | {
       type: 'payment_filter_set'
       value: PaymentFilterState
+    }
+  | {
+      type: 'payment_filter_patch'
+      patch: Partial<PaymentFilterState>
+    }
+  | {
+      type: 'merchant_field_set'
+      field: keyof DashboardMerchantDraft
+      value: DashboardMerchantDraft[keyof DashboardMerchantDraft]
+    }
+  | {
+      type: 'merchant_recipient_address_set'
+      chain: string
+      value: string
+    }
+  | {
+      type: 'merchant_default_rail_set'
+      nextRail: string
+      appConfig: DashboardConfig | null | undefined
+    }
+  | {
+      type: 'checkout_field_set'
+      field: keyof DashboardCheckoutDraft
+      value: DashboardCheckoutDraft[keyof DashboardCheckoutDraft]
+    }
+  | {
+      type: 'checkout_sync_rail'
+      nextRail: string
+      appConfig: DashboardConfig | null | undefined
+    }
+  | {
+      type: 'plan_update'
+      index: number
+      patch: Partial<DashboardMerchantDraft['plans'][number]>
+    }
+  | {
+      type: 'plan_set_rail'
+      index: number
+      nextRail: string
+      appConfig: DashboardConfig | null | undefined
+    }
+  | {
+      type: 'plan_add'
+      appConfig: DashboardConfig | null | undefined
+    }
+  | {
+      type: 'plan_duplicate'
+      index: number
+    }
+  | {
+      type: 'plan_remove'
+      index: number
+    }
+  | {
+      type: 'apply_selected_plan'
+      planId: string
     }
 
 const defaultPaymentFilter: PaymentFilterState = {
@@ -103,10 +164,101 @@ const createDashboardPageState = (
     merchantDraft: createMerchantDraft(initialData?.merchant, appConfig),
     checkoutDraft: createCheckoutDraft(initialData?.merchant, appConfig),
     createdCheckout: null,
+    checkoutStatus: '',
     merchantStatus: '',
     authStatus: '',
     expandedPlanIndex: null,
     paymentFilter: defaultPaymentFilter,
+  }
+}
+
+const applyMerchantDefaultRail = (
+  merchantDraft: DashboardMerchantDraft,
+  nextRail: string,
+  appConfig: DashboardConfig | null | undefined,
+) => {
+  const normalizedRail = normalizePaymentRail(nextRail)
+  const nextAssets = valuesForRail(
+    merchantDraft.defaultAcceptedAssets,
+    normalizedRail,
+    'asset',
+  )
+  return {
+    ...merchantDraft,
+    defaultPaymentRail: normalizedRail,
+    defaultAcceptedAssets: nextAssets.length
+      ? nextAssets
+      : defaultRailSelection(appConfig, normalizedRail, 'asset'),
+  }
+}
+
+const applyCheckoutRail = (
+  state: DashboardPageState,
+  nextRail: string,
+  appConfig: DashboardConfig | null | undefined,
+) => {
+  const normalizedRail = normalizePaymentRail(nextRail)
+  const merchantChainDefaults = valuesForRail(
+    state.merchantDraft.enabledChains,
+    normalizedRail,
+    'chain',
+  )
+  const merchantAssetDefaults = valuesForRail(
+    state.merchantDraft.defaultAcceptedAssets,
+    normalizedRail,
+    'asset',
+  )
+  const enabledChains = valuesForRail(
+    state.checkoutDraft.enabledChains,
+    normalizedRail,
+    'chain',
+  )
+  const acceptedAssets = valuesForRail(
+    state.checkoutDraft.acceptedAssets,
+    normalizedRail,
+    'asset',
+  )
+  return {
+    ...state.checkoutDraft,
+    paymentRail: normalizedRail,
+    enabledChains: enabledChains.length
+      ? enabledChains
+      : merchantChainDefaults.length
+        ? merchantChainDefaults
+        : defaultRailSelection(appConfig, normalizedRail, 'chain'),
+    acceptedAssets: acceptedAssets.length
+      ? acceptedAssets
+      : merchantAssetDefaults.length
+        ? merchantAssetDefaults
+        : defaultRailSelection(appConfig, normalizedRail, 'asset'),
+  }
+}
+
+const applyPlanRail = (
+  plan: DashboardMerchantDraft['plans'][number],
+  nextRail: string,
+  appConfig: DashboardConfig | null | undefined,
+) => {
+  const normalizedRail = normalizePaymentRail(nextRail)
+  const enabledChains = valuesForRail(
+    plan.enabledChains,
+    normalizedRail,
+    'chain',
+  )
+  const acceptedAssets = valuesForRail(
+    plan.acceptedAssets,
+    normalizedRail,
+    'asset',
+  )
+  return {
+    ...plan,
+    paymentRail: normalizedRail,
+    enabledChains: enabledChains.length
+      ? enabledChains
+      : defaultRailSelection(appConfig, normalizedRail, 'chain'),
+    acceptedAssets: acceptedAssets.length
+      ? acceptedAssets
+      : defaultRailSelection(appConfig, normalizedRail, 'asset'),
   }
 }
 
@@ -172,6 +324,11 @@ const dashboardPageReducer = (
         ...state,
         createdCheckout: action.value,
       }
+    case 'checkout_status_set':
+      return {
+        ...state,
+        checkoutStatus: action.value,
+      }
     case 'merchant_status_set':
       return {
         ...state,
@@ -192,6 +349,158 @@ const dashboardPageReducer = (
         ...state,
         paymentFilter: action.value,
       }
+    case 'payment_filter_patch':
+      return {
+        ...state,
+        paymentFilter: { ...state.paymentFilter, ...action.patch },
+      }
+    case 'merchant_field_set':
+      return {
+        ...state,
+        merchantDraft: {
+          ...state.merchantDraft,
+          [action.field]: action.value,
+        },
+      }
+    case 'merchant_recipient_address_set':
+      return {
+        ...state,
+        merchantDraft: {
+          ...state.merchantDraft,
+          recipientAddresses: {
+            ...state.merchantDraft.recipientAddresses,
+            [action.chain]: action.value,
+          },
+        },
+      }
+    case 'merchant_default_rail_set':
+      return {
+        ...state,
+        merchantDraft: applyMerchantDefaultRail(
+          state.merchantDraft,
+          action.nextRail,
+          action.appConfig,
+        ),
+      }
+    case 'checkout_field_set':
+      return {
+        ...state,
+        checkoutDraft: {
+          ...state.checkoutDraft,
+          [action.field]: action.value,
+        },
+      }
+    case 'checkout_sync_rail':
+      return {
+        ...state,
+        checkoutDraft: applyCheckoutRail(
+          state,
+          action.nextRail,
+          action.appConfig,
+        ),
+      }
+    case 'plan_update': {
+      if (!state.merchantDraft.plans[action.index]) return state
+      const plans = [...state.merchantDraft.plans]
+      plans[action.index] = { ...plans[action.index], ...action.patch }
+      return {
+        ...state,
+        merchantDraft: {
+          ...state.merchantDraft,
+          plans,
+        },
+      }
+    }
+    case 'plan_set_rail': {
+      const plan = state.merchantDraft.plans[action.index]
+      if (!plan) return state
+      const plans = [...state.merchantDraft.plans]
+      plans[action.index] = applyPlanRail(
+        plan,
+        action.nextRail,
+        action.appConfig,
+      )
+      return {
+        ...state,
+        merchantDraft: {
+          ...state.merchantDraft,
+          plans,
+        },
+      }
+    }
+    case 'plan_add':
+      return {
+        ...state,
+        merchantDraft: {
+          ...state.merchantDraft,
+          plans: [...state.merchantDraft.plans, newPlan(action.appConfig)],
+        },
+        expandedPlanIndex: state.merchantDraft.plans.length,
+      }
+    case 'plan_duplicate': {
+      const plan = state.merchantDraft.plans[action.index]
+      if (!plan) return state
+      const duplicate = {
+        ...plan,
+        id: `${plan.id || 'plan'}_${Math.random().toString(36).slice(2, 6)}`,
+      }
+      const plans = [...state.merchantDraft.plans]
+      plans.splice(action.index + 1, 0, duplicate)
+      return {
+        ...state,
+        merchantDraft: {
+          ...state.merchantDraft,
+          plans,
+        },
+        expandedPlanIndex: action.index + 1,
+      }
+    }
+    case 'plan_remove': {
+      const plans = state.merchantDraft.plans.filter(
+        (_, planIndex) => planIndex !== action.index,
+      )
+      return {
+        ...state,
+        merchantDraft: {
+          ...state.merchantDraft,
+          plans,
+        },
+        expandedPlanIndex:
+          state.expandedPlanIndex === action.index
+            ? null
+            : state.expandedPlanIndex != null &&
+                state.expandedPlanIndex > action.index
+              ? state.expandedPlanIndex - 1
+              : state.expandedPlanIndex,
+      }
+    }
+    case 'apply_selected_plan': {
+      const plan = state.merchantDraft.plans.find(
+        (entry) => entry.id === action.planId,
+      )
+      if (!plan) {
+        return {
+          ...state,
+          checkoutDraft: {
+            ...state.checkoutDraft,
+            planId: action.planId,
+          },
+        }
+      }
+      return {
+        ...state,
+        checkoutDraft: {
+          ...state.checkoutDraft,
+          planId: action.planId,
+          title: plan.title || '',
+          description: plan.description || '',
+          paymentRail: normalizePaymentRail(plan.paymentRail),
+          amountUsd: Number(plan.amountUsd || 0).toFixed(2),
+          enabledChains: plan.enabledChains || [],
+          acceptedAssets: plan.acceptedAssets || [],
+        },
+      }
+    }
     default:
       return state
   }
@@ -207,14 +516,6 @@ export const useDashboardPageState = (
     ({ initialData: nextInitialData, appConfig: nextAppConfig }) =>
       createDashboardPageState(nextInitialData, nextAppConfig),
   )
-
-  const setMerchantDraft = (draft: DashboardMerchantDraft) => {
-    dispatch({ type: 'merchant_draft_set', draft })
-  }
-
-  const setCheckoutDraft = (draft: DashboardCheckoutDraft) => {
-    dispatch({ type: 'checkout_draft_set', draft })
-  }
 
   return {
     state,
@@ -245,6 +546,9 @@ export const useDashboardPageState = (
     setCreatedCheckout: useCallback((value: DashboardCreatedCheckout | null) => {
       dispatch({ type: 'created_checkout_set', value })
     }, []),
+    setCheckoutStatus: useCallback((value: string) => {
+      dispatch({ type: 'checkout_status_set', value })
+    }, []),
     setMerchantStatus: useCallback((value: string) => {
       dispatch({ type: 'merchant_status_set', value })
     }, []),
@@ -257,192 +561,71 @@ export const useDashboardPageState = (
     setPaymentFilter: useCallback((value: PaymentFilterState) => {
       dispatch({ type: 'payment_filter_set', value })
     }, []),
-    patchPaymentFilter(patch: Partial<PaymentFilterState>) {
-      dispatch({
-        type: 'payment_filter_set',
-        value: { ...state.paymentFilter, ...patch },
-      })
-    },
-    setMerchantField<K extends keyof DashboardMerchantDraft>(
+    patchPaymentFilter: useCallback((patch: Partial<PaymentFilterState>) => {
+      dispatch({ type: 'payment_filter_patch', patch })
+    }, []),
+    setMerchantField: useCallback(<K extends keyof DashboardMerchantDraft>(
       field: K,
       value: DashboardMerchantDraft[K],
-    ) {
-      setMerchantDraft({
-        ...state.merchantDraft,
-        [field]: value,
+    ) => {
+      dispatch({
+        type: 'merchant_field_set',
+        field,
+        value,
       })
-    },
-    setMerchantRecipientAddress(chain: string, value: string) {
-      setMerchantDraft({
-        ...state.merchantDraft,
-        recipientAddresses: {
-          ...state.merchantDraft.recipientAddresses,
-          [chain]: value,
-        },
+    }, []),
+    setMerchantRecipientAddress: useCallback((chain: string, value: string) => {
+      dispatch({
+        type: 'merchant_recipient_address_set',
+        chain,
+        value,
       })
-    },
-    setMerchantDefaultRail(nextRail: string) {
-      const normalizedRail = normalizePaymentRail(nextRail)
-      const nextAssets = valuesForRail(
-        state.merchantDraft.defaultAcceptedAssets,
-        normalizedRail,
-        'asset',
-      )
-      setMerchantDraft({
-        ...state.merchantDraft,
-        defaultPaymentRail: normalizedRail,
-        defaultAcceptedAssets: nextAssets.length
-          ? nextAssets
-          : defaultRailSelection(appConfig, normalizedRail, 'asset'),
-      })
-    },
-    setCheckoutField<K extends keyof DashboardCheckoutDraft>(
+    }, []),
+    setMerchantDefaultRail: useCallback((nextRail: string) => {
+      dispatch({ type: 'merchant_default_rail_set', nextRail, appConfig })
+    }, [appConfig]),
+    setCheckoutField: useCallback(<K extends keyof DashboardCheckoutDraft>(
       field: K,
       value: DashboardCheckoutDraft[K],
-    ) {
-      setCheckoutDraft({
-        ...state.checkoutDraft,
-        [field]: value,
+    ) => {
+      dispatch({
+        type: 'checkout_field_set',
+        field,
+        value,
       })
-    },
-    syncCheckoutRail(nextRail: string) {
-      const merchantChainDefaults = valuesForRail(
-        state.merchantDraft.enabledChains,
-        nextRail,
-        'chain',
-      )
-      const merchantAssetDefaults = valuesForRail(
-        state.merchantDraft.defaultAcceptedAssets,
-        nextRail,
-        'asset',
-      )
-      const enabledChains = valuesForRail(
-        state.checkoutDraft.enabledChains,
-        nextRail,
-        'chain',
-      )
-      const acceptedAssets = valuesForRail(
-        state.checkoutDraft.acceptedAssets,
-        nextRail,
-        'asset',
-      )
-      setCheckoutDraft({
-        ...state.checkoutDraft,
-        paymentRail: nextRail,
-        enabledChains: enabledChains.length
-          ? enabledChains
-          : merchantChainDefaults.length
-            ? merchantChainDefaults
-            : defaultRailSelection(appConfig, nextRail, 'chain'),
-        acceptedAssets: acceptedAssets.length
-          ? acceptedAssets
-          : merchantAssetDefaults.length
-            ? merchantAssetDefaults
-            : defaultRailSelection(appConfig, nextRail, 'asset'),
-      })
-    },
-    updatePlan(
+    }, []),
+    syncCheckoutRail: useCallback((nextRail: string) => {
+      dispatch({ type: 'checkout_sync_rail', nextRail, appConfig })
+    }, [appConfig]),
+    updatePlan: useCallback((
       index: number,
       patch: Partial<DashboardMerchantDraft['plans'][number]>,
-    ) {
-      const plans = [...state.merchantDraft.plans]
-      plans[index] = { ...plans[index], ...patch }
-      setMerchantDraft({
-        ...state.merchantDraft,
-        plans,
+    ) => {
+      dispatch({
+        type: 'plan_update',
+        index,
+        patch,
       })
-    },
-    setPlanRail(index: number, nextRail: string) {
-      const plan = state.merchantDraft.plans[index]
-      if (!plan) return
-      const enabledChains = valuesForRail(plan.enabledChains, nextRail, 'chain')
-      const acceptedAssets = valuesForRail(
-        plan.acceptedAssets,
+    }, []),
+    setPlanRail: useCallback((index: number, nextRail: string) => {
+      dispatch({
+        type: 'plan_set_rail',
+        index,
         nextRail,
-        'asset',
-      )
-      const plans = [...state.merchantDraft.plans]
-      plans[index] = {
-        ...plan,
-        paymentRail: nextRail,
-        enabledChains: enabledChains.length
-          ? enabledChains
-          : defaultRailSelection(appConfig, nextRail, 'chain'),
-        acceptedAssets: acceptedAssets.length
-          ? acceptedAssets
-          : defaultRailSelection(appConfig, nextRail, 'asset'),
-      }
-      setMerchantDraft({
-        ...state.merchantDraft,
-        plans,
+        appConfig,
       })
-    },
-    addPlan() {
-      setMerchantDraft({
-        ...state.merchantDraft,
-        plans: [...state.merchantDraft.plans, newPlan(appConfig)],
-      })
-      dispatch({
-        type: 'expanded_plan_index_set',
-        value: state.merchantDraft.plans.length,
-      })
-    },
-    duplicatePlan(index: number) {
-      const plan = state.merchantDraft.plans[index]
-      if (!plan) return
-      const duplicate = {
-        ...plan,
-        id: `${plan.id || 'plan'}_${Math.random().toString(36).slice(2, 6)}`,
-      }
-      const plans = [...state.merchantDraft.plans]
-      plans.splice(index + 1, 0, duplicate)
-      setMerchantDraft({
-        ...state.merchantDraft,
-        plans,
-      })
-      dispatch({
-        type: 'expanded_plan_index_set',
-        value: index + 1,
-      })
-    },
-    removePlan(index: number) {
-      setMerchantDraft({
-        ...state.merchantDraft,
-        plans: state.merchantDraft.plans.filter(
-          (_, planIndex) => planIndex !== index,
-        ),
-      })
-      dispatch({
-        type: 'expanded_plan_index_set',
-        value:
-          state.expandedPlanIndex === index
-            ? null
-            : state.expandedPlanIndex != null && state.expandedPlanIndex > index
-              ? state.expandedPlanIndex - 1
-              : state.expandedPlanIndex,
-      })
-    },
-    applySelectedPlan(planId: string) {
-      const plan = state.merchantDraft.plans.find(
-        (entry) => entry.id === planId,
-      )
-      if (!plan) {
-        setCheckoutDraft({
-          ...state.checkoutDraft,
-          planId,
-        })
-        return
-      }
-      setCheckoutDraft({
-        ...state.checkoutDraft,
-        planId,
-        title: plan.title || '',
-        description: plan.description || '',
-        paymentRail: normalizePaymentRail(plan.paymentRail),
-        amountUsd: Number(plan.amountUsd || 0).toFixed(2),
-        enabledChains: plan.enabledChains || [],
-        acceptedAssets: plan.acceptedAssets || [],
-      })
-    },
+    }, [appConfig]),
+    addPlan: useCallback(() => {
+      dispatch({ type: 'plan_add', appConfig })
+    }, [appConfig]),
+    duplicatePlan: useCallback((index: number) => {
+      dispatch({ type: 'plan_duplicate', index })
+    }, []),
+    removePlan: useCallback((index: number) => {
+      dispatch({ type: 'plan_remove', index })
+    }, []),
+    applySelectedPlan: useCallback((planId: string) => {
+      dispatch({ type: 'apply_selected_plan', planId })
+    }, []),
   }
 }

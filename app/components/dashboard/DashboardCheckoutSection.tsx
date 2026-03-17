@@ -23,6 +23,7 @@ export function DashboardCheckoutSection() {
     appConfig,
     applySelectedPlan,
     checkoutDraft,
+    checkoutStatus,
     createCheckout,
     createdCheckout,
     editingEnabled,
@@ -276,6 +277,7 @@ export function DashboardCheckoutSection() {
             </button>
           </div>
           <div className="muted">
+            {checkoutStatus ? <div>{checkoutStatus}</div> : null}
             {createdCheckout ? (
               <div className="dashboard-inline-result">
                 <span className="badge ok">

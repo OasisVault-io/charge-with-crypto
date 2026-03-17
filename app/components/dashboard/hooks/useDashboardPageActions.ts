@@ -29,6 +29,7 @@ type UseDashboardPageActionsParams = {
   ) => void
   setAuthInput: (value: string) => void
   setAuthStatus: (value: string) => void
+  setCheckoutStatus: (value: string) => void
   setCreatedCheckout: (value: DashboardCreatedCheckout | null) => void
   setDashboardToken: (value: string) => void
   setMerchantField: <K extends keyof DashboardMerchantDraft>(
@@ -58,6 +59,7 @@ export const useDashboardPageActions = ({
   dashboardReloaded,
   setAuthInput,
   setAuthStatus,
+  setCheckoutStatus,
   setCreatedCheckout,
   setDashboardToken,
   setMerchantField,
@@ -105,57 +107,76 @@ export const useDashboardPageActions = ({
 
   const saveMerchant = useEffectEvent(async () => {
     setMerchantStatus('Saving merchant settings...')
-    const payload = {
-      ...merchantDraft,
-      plans: merchantDraft.plans.map((plan) => ({
-        ...plan,
-        amountUsd: Number(plan.amountUsd || 0),
-      })),
+    try {
+      const payload = {
+        ...merchantDraft,
+        plans: merchantDraft.plans.map((plan) => ({
+          ...plan,
+          amountUsd: Number(plan.amountUsd || 0),
+        })),
+      }
+
+      await fetchJson(
+        `/api/merchants/${encodeURIComponent(merchantId)}`,
+        withDashboardToken(
+          jsonRequest(payload, {
+            method: 'PATCH',
+          }),
+          dashboardToken,
+        ),
+      )
+
+      setMerchantStatus('Saved.')
+      await reloadDashboard(dashboardToken)
+    } catch (error) {
+      console.error('Failed to save merchant settings', error)
+      setMerchantStatus('Failed to save merchant settings.')
+      throw error
     }
-
-    await fetchJson(
-      `/api/merchants/${encodeURIComponent(merchantId)}`,
-      withDashboardToken(
-        jsonRequest(payload, {
-          method: 'PATCH',
-        }),
-        dashboardToken,
-      ),
-    )
-
-    setMerchantStatus('Saved.')
-    await reloadDashboard(dashboardToken)
   })
 
   const createCheckout = useEffectEvent(async (resolved: boolean) => {
-    const payload = {
-      merchantId,
-      planId: checkoutDraft.planId || undefined,
-      title: checkoutDraft.title || undefined,
-      description: checkoutDraft.description || undefined,
-      paymentRail: checkoutDraft.paymentRail,
-      orderId: checkoutDraft.orderId || undefined,
-      amountUsd: Number(checkoutDraft.amountUsd || 0),
-      referenceId: checkoutDraft.referenceId || undefined,
-      successUrl: checkoutDraft.successUrl || undefined,
-      cancelUrl: checkoutDraft.cancelUrl || undefined,
-      enabledChains: checkoutDraft.enabledChains,
-      acceptedAssets: checkoutDraft.acceptedAssets,
-    }
-
-    const created = await fetchJson<DashboardCreatedCheckout>(
-      resolved ? '/api/checkouts/resolve' : '/api/checkouts',
-      withDashboardToken(
-        jsonRequest(payload, {
-          method: 'POST',
-          headers: { 'idempotency-key': crypto.randomUUID() },
-        }),
-        dashboardToken,
-      ),
+    setCheckoutStatus(
+      resolved ? 'Resolving checkout...' : 'Creating checkout...',
     )
+    try {
+      const payload = {
+        merchantId,
+        planId: checkoutDraft.planId || undefined,
+        title: checkoutDraft.title || undefined,
+        description: checkoutDraft.description || undefined,
+        paymentRail: checkoutDraft.paymentRail,
+        orderId: checkoutDraft.orderId || undefined,
+        amountUsd: Number(checkoutDraft.amountUsd || 0),
+        referenceId: checkoutDraft.referenceId || undefined,
+        successUrl: checkoutDraft.successUrl || undefined,
+        cancelUrl: checkoutDraft.cancelUrl || undefined,
+        enabledChains: checkoutDraft.enabledChains,
+        acceptedAssets: checkoutDraft.acceptedAssets,
+      }
 
-    await reloadDashboard(dashboardToken)
-    setCreatedCheckout(created)
+      const created = await fetchJson<DashboardCreatedCheckout>(
+        resolved ? '/api/checkouts/resolve' : '/api/checkouts',
+        withDashboardToken(
+          jsonRequest(payload, {
+            method: 'POST',
+            headers: { 'idempotency-key': crypto.randomUUID() },
+          }),
+          dashboardToken,
+        ),
+      )
+
+      await reloadDashboard(dashboardToken)
+      setCreatedCheckout(created)
+      setCheckoutStatus('')
+    } catch (error) {
+      console.error('Failed to create dashboard checkout', error)
+      setCheckoutStatus(
+        resolved
+          ? 'Failed to resolve checkout. Try again.'
+          : 'Failed to create checkout. Try again.',
+      )
+    }
   })
 
   const exportPayments = () => {

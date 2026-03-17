@@ -666,8 +666,8 @@ class X402Service {
       planId: requestedPlanId,
     })) as ResolvedCheckoutLike
 
-    const amountUsd = Number(resolved.amountUsd || 0)
-    if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
+    const roundedUsd = Number(Number(resolved.amountUsd || 0).toFixed(2))
+    if (!Number.isFinite(roundedUsd) || roundedUsd <= 0) {
       throw createStatusError(
         'resolved x402 amountUsd must be greater than zero',
         400,
@@ -717,7 +717,7 @@ class X402Service {
       description: String(
         resolved.description || merchant.checkoutDescription || '',
       ),
-      amountUsd: Number(amountUsd.toFixed(2)),
+      amountUsd: roundedUsd,
       successUrl: resolved.successUrl || '',
       cancelUrl: resolved.cancelUrl || '',
       recipientAddress,

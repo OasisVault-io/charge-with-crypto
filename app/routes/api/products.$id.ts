@@ -4,7 +4,7 @@ import { apiError, apiErrorResponse, json } from '../../lib/utils/api'
 export async function loader({ params }: { params: { id?: string } }) {
   try {
     return json(
-      getAppContext().productService.getProductDetail(params.id || ''),
+      await getAppContext().productService.getProductDetail(params.id || ''),
     )
   } catch (error) {
     return apiErrorResponse(error, {

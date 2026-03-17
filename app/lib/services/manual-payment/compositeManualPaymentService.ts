@@ -214,6 +214,8 @@ class CompositeManualPaymentService {
       routes.push({
         key: 'bitcoin',
         rail: 'bitcoin',
+        chain: 'bitcoin',
+        asset: 'BTC',
         address: bitcoinDetails.address,
         enabledChains: ['bitcoin'],
         acceptedAssets: ['BTC'],

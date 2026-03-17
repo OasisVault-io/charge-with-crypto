@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import fs from 'node:fs'
 import {
   type IncomingMessage,
   type OutgoingHttpHeaders,
@@ -36,18 +36,44 @@ function sendText(res: ServerResponse, statusCode: number, text: string): void {
   res.end(text)
 }
 
-function sendFile(res: ServerResponse, filePath: string): boolean {
-  if (!existsSync(filePath)) return false
-  const ext = extname(filePath).toLowerCase()
-  const mime = mimeByExt[ext] || 'application/octet-stream'
-  const content = readFileSync(filePath)
-  res.writeHead(200, {
-    'content-type': mime,
-    'content-length': content.length,
-    'cache-control': ext === '.html' ? 'no-store' : 'public, max-age=3600',
-  })
-  res.end(content)
-  return true
+async function sendFile(
+  res: ServerResponse,
+  filePath: string,
+): Promise<boolean> {
+  try {
+    const stats = await fs.promises.stat(filePath)
+    if (!stats.isFile()) return false
+    const ext = extname(filePath).toLowerCase()
+    const mime = mimeByExt[ext] || 'application/octet-stream'
+    res.writeHead(200, {
+      'content-type': mime,
+      'content-length': stats.size,
+      'cache-control': ext === '.html' ? 'no-store' : 'public, max-age=3600',
+    })
+    await new Promise<void>((resolve) => {
+      const stream = fs.createReadStream(filePath)
+      stream.on('error', () => {
+        if (!res.headersSent) {
+          res.statusCode = 500
+          res.end()
+        } else {
+          res.destroy()
+        }
+        resolve()
+      })
+      res.on('close', () => stream.destroy())
+      stream.on('end', resolve)
+      stream.pipe(res)
+    })
+    return true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') return false
+    if (!res.headersSent) {
+      res.statusCode = 500
+      res.end()
+    }
+    return false
+  }
 }
 
 function parseJsonBody<T = Record<string, unknown>>(
@@ -77,16 +103,22 @@ function parseJsonBody<T = Record<string, unknown>>(
     req.on('end', () => {
       if (done) return
       const raw = Buffer.concat(chunks).toString('utf8')
-      if (!raw) return resolve({} as T)
+      if (!raw) {
+        done = true
+        reject(new Error('Empty body'))
+        return
+      }
       try {
         done = true
         resolve(JSON.parse(raw) as T)
       } catch {
+        done = true
         reject(new Error('Invalid JSON body'))
       }
     })
     req.on('error', (err: Error) => {
       if (done) return
+      done = true
       reject(err)
     })
   })

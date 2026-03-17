@@ -1,5 +1,10 @@
 // @ts-nocheck
 declare global {
+  type PhantomWalletAdapter = {
+    BrowserSDK: typeof import('@phantom/browser-sdk').BrowserSDK
+    AddressType: typeof import('@phantom/browser-sdk').AddressType
+  }
+
   interface XverseWalletAdapter {
     request?: (method: string, params?: Record<string, unknown>) => Promise<any>
     setDefaultProvider?: (providerId: string) => void
@@ -22,6 +27,7 @@ declare global {
     }
     ChargeWithCryptoVendors?: {
       xverse?: XverseWalletAdapter
+      phantom?: PhantomWalletAdapter
     }
   }
 }

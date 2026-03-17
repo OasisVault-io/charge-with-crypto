@@ -49,7 +49,7 @@ class McpService {
   priceService: PriceServiceLike
   manualPaymentService: ManualPaymentServiceLike
   bitcoinAddressService: BitcoinAddressServiceLike
-  x402Service: X402ServiceLike
+  x402Service: X402ServiceLike | null
   productService: ProductService
 
   constructor({
@@ -66,7 +66,7 @@ class McpService {
     this.priceService = priceService
     this.manualPaymentService = manualPaymentService
     this.bitcoinAddressService = bitcoinAddressService
-    this.x402Service = x402Service || {}
+    this.x402Service = x402Service || null
     this.productService =
       productService ||
       new ProductService({

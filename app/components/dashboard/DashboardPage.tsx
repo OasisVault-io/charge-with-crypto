@@ -54,6 +54,7 @@ export function DashboardPage({
     setAuthInput,
     setAuthStatus,
     setCheckoutField,
+    setCheckoutStatus,
     setCreatedCheckout,
     setDashboardToken,
     setExpandedPlanIndex,
@@ -71,6 +72,7 @@ export function DashboardPage({
     authInput,
     authStatus,
     checkoutDraft,
+    checkoutStatus,
     createdCheckout,
     dashboardData,
     dashboardToken,
@@ -140,6 +142,7 @@ export function DashboardPage({
     clearDashboardToken,
     setAuthInput,
     setAuthStatus,
+    setCheckoutStatus,
     setCreatedCheckout,
     setDashboardToken,
     setMerchantField,
@@ -152,12 +155,16 @@ export function DashboardPage({
     if (!stored) return
     setDashboardToken(stored)
     if (appConfig?.dashboardAuthConfigured && !dashboardData?.authenticated) {
-      reloadDashboard(stored).catch(() => {})
+      reloadDashboard(stored).catch((error) => {
+        console.error('Failed to reload dashboard with stored token', error)
+        setAuthStatus('Could not verify your dashboard session. Try again.')
+      })
     }
   }, [
     appConfig?.dashboardAuthConfigured,
     dashboardData?.authenticated,
     reloadDashboard,
+    setAuthStatus,
     setDashboardToken,
   ])
 
@@ -246,6 +253,7 @@ export function DashboardPage({
       appConfig,
       applySelectedPlan,
       checkoutDraft,
+      checkoutStatus,
       checklist,
       completedSetup,
       createCheckout,
@@ -285,6 +293,7 @@ export function DashboardPage({
       appConfig,
       applySelectedPlan,
       checkoutDraft,
+      checkoutStatus,
       checklist,
       completedSetup,
       createCheckout,
@@ -357,7 +366,10 @@ export function DashboardPage({
           </>
         ) : (
           <DashboardPageProvider value={dashboardPageContextValue}>
-            <DashboardTopbar description="Use the left menu to manage brand, plans, checkout creation, payments, and activity one section at a time." />
+            <DashboardTopbar
+              deployedAppUrl={appConfig?.deployedAppUrl}
+              description="Use the left menu to manage brand, plans, checkout creation, payments, and activity one section at a time."
+            />
 
             <section className="dashboard-layout">
               <DashboardSidebar />

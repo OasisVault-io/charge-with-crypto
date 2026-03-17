@@ -2,6 +2,10 @@ function pow10(decimals: number): bigint {
   return 10n ** BigInt(decimals)
 }
 
+function isNonNegativeInteger(value: number) {
+  return Number.isInteger(value) && value >= 0
+}
+
 function decimalToBaseUnits(
   value: string | number | bigint | null | undefined,
   decimals: number,
@@ -19,7 +23,32 @@ function baseUnitsToDecimalString(
   decimals: number,
   precision = decimals,
 ): string {
-  const value = BigInt(units)
+  if (!isNonNegativeInteger(decimals)) {
+    throw new TypeError('decimals must be a non-negative integer')
+  }
+  if (!isNonNegativeInteger(precision)) {
+    throw new TypeError('precision must be a non-negative integer')
+  }
+  let value: bigint
+  try {
+    if (typeof units === 'bigint') {
+      value = units
+    } else if (typeof units === 'number') {
+      if (!Number.isInteger(units)) {
+        throw new TypeError('units must be an integer')
+      }
+      value = BigInt(units)
+    } else {
+      const text = String(units ?? '').trim()
+      if (!/^-?\d+$/.test(text)) {
+        throw new TypeError('units must be a bigint-coercible integer')
+      }
+      value = BigInt(text)
+    }
+  } catch (error) {
+    if (error instanceof TypeError) throw error
+    throw new TypeError('units must be a bigint-coercible integer')
+  }
   const scale = pow10(decimals)
   const whole = value / scale
   const fraction = String(value % scale)

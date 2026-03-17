@@ -20,6 +20,7 @@ type DashboardPageContextValue = {
   appConfig: DashboardConfig
   checklist: DashboardChecklistItem[]
   checkoutDraft: DashboardCheckoutDraft
+  checkoutStatus: string
   completedSetup: number
   createdCheckout: DashboardCreatedCheckout | null
   dashboardData: DashboardData

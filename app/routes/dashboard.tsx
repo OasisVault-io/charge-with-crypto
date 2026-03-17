@@ -16,7 +16,7 @@ export async function loader({ request }: { request: Request }) {
   return {
     merchantId,
     appConfig: context.configService.getPublicConfig(),
-    dashboardData: context.dashboardService.getDashboardData(
+    dashboardData: await context.dashboardService.getDashboardData(
       request,
       merchantId,
     ),

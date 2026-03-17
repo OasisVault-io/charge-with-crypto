@@ -196,15 +196,29 @@ export function balanceForQuote(
   return balances?.[quoteKey(quote)] || null
 }
 
+function parseBigIntValue(value: string | number | bigint | null | undefined) {
+  if (typeof value === 'bigint') return value
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? BigInt(value) : null
+  }
+  const text = String(value ?? '').trim()
+  if (!/^-?\d+$/.test(text)) return null
+  try {
+    return BigInt(text)
+  } catch {
+    return null
+  }
+}
+
 export function isQuotePayable(
   balances: Record<string, CheckoutBalance> | undefined,
   quote: CheckoutQuote,
 ) {
   const balance = balanceForQuote(balances, quote)
+  const balanceRaw = parseBigIntValue(balance?.raw)
+  const quoteAmount = parseBigIntValue(quote.cryptoAmountBaseUnits)
   return Boolean(
-    balance &&
-    balance.raw != null &&
-    BigInt(balance.raw) >= BigInt(quote.cryptoAmountBaseUnits),
+    balance && balanceRaw != null && quoteAmount != null && balanceRaw >= quoteAmount,
   )
 }
 

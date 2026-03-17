@@ -24,7 +24,11 @@ export function DashboardLogoImage({
       alt={alt}
       className={className}
       src={currentSrc}
-      onError={() => setCurrentSrc(defaultMerchantLogo)}
+      onError={() => {
+        if (currentSrc !== defaultMerchantLogo) {
+          setCurrentSrc(defaultMerchantLogo)
+        }
+      }}
     />
   )
 }

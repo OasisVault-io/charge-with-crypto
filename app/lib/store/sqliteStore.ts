@@ -47,7 +47,8 @@ class SqliteStore implements StoreLike {
       this.sqlite = sqlite
       this.db = db
       this.ensure()
-    } catch {
+    } catch (error) {
+      console.error('Failed to initialize SQLite store', error)
       this.fallback = new JsonStore(dataDir)
     }
   }
@@ -100,6 +101,15 @@ class SqliteStore implements StoreLike {
       .where(eq(table.id, String(id)))
       .get()
     return this.rowToItem<C>(row)
+  }
+
+  delete<C extends CollectionName>(name: C, id: string): boolean {
+    if (this.fallback) return this.fallback.delete(name, id)
+    const table = this.table(name)
+    const current = this.getById(name, id)
+    if (!current) return false
+    this.db!.delete(table).where(eq(table.id, String(id))).run()
+    return true
   }
 
   insert<C extends CollectionName>(

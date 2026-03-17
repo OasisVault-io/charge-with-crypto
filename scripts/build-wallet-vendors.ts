@@ -1,6 +1,11 @@
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
-const root = path.resolve(__dirname, '..')
+
+const root = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+)
 
 const targets = [
   {

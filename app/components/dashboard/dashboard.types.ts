@@ -1,6 +1,7 @@
 import { type DashboardSection } from './dashboard.shared'
 
 export type DashboardConfig = {
+  deployedAppUrl?: string
   chains?: Record<
     string,
     {

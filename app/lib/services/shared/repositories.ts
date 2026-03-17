@@ -53,6 +53,10 @@ class CollectionRepository<C extends CollectionName> implements Repository<
       : this.find(predicate)[0] || null
   }
 
+  delete(id: string): boolean {
+    return this.store.delete(this.collection, id)
+  }
+
   insert(item: InsertableRecord<CollectionMap[C]>): CollectionMap[C] {
     return this.store.insert(this.collection, item)
   }
@@ -105,21 +109,28 @@ class QuotesRepository extends CollectionRepository<'quotes'> {
   }
 
   activeForCheckout(checkoutId: string, now = new Date()) {
-    const active: QuoteRecord[] = []
-    for (const quote of this.latestForCheckoutRoutes(checkoutId)) {
-      if (quote.expiresAt && isExpired(quote.expiresAt, now)) {
-        if (quote.status !== 'expired') {
-          this.update(quote.id, { status: 'expired' })
-        }
-        continue
-      }
-      active.push(quote)
-    }
-    return active.sort((a, b) =>
+    return this.latestForCheckoutRoutes(checkoutId)
+      .filter((quote) => !quote.expiresAt || !isExpired(quote.expiresAt, now))
+      .sort((a, b) =>
       `${String(a.chain)}:${String(a.asset)}`.localeCompare(
         `${String(b.chain)}:${String(b.asset)}`,
-      ),
-    )
+      ))
+  }
+
+  expireQuotesForCheckout(checkoutId: string, now = new Date()) {
+    let expired = 0
+    for (const quote of this.latestForCheckoutRoutes(checkoutId)) {
+      if (
+        quote.expiresAt &&
+        isExpired(quote.expiresAt, now) &&
+        quote.status !== 'expired'
+      ) {
+        if (this.update(quote.id, { status: 'expired' })) {
+          expired += 1
+        }
+      }
+    }
+    return expired
   }
 
   activeForSelection(
@@ -186,23 +197,25 @@ class PaymentsRepository extends CollectionRepository<'payments'> {
   }
 
   findByCheckoutChainTx(checkoutId: string, chain: string, txHash: string) {
+    const normalizedTxHash = String(txHash || '').toLowerCase()
     return (
       this.find(
         (payment) =>
           payment.checkoutId === checkoutId &&
           payment.chain === chain &&
-          String(payment.txHash || '').toLowerCase() === txHash,
+          String(payment.txHash || '').toLowerCase() === normalizedTxHash,
       )[0] || null
     )
   }
 
   findConflictingChainTx(checkoutId: string, chain: string, txHash: string) {
+    const normalizedTxHash = String(txHash || '').toLowerCase()
     return (
       this.find(
         (payment) =>
           payment.checkoutId !== checkoutId &&
           payment.chain === chain &&
-          String(payment.txHash || '').toLowerCase() === txHash,
+          String(payment.txHash || '').toLowerCase() === normalizedTxHash,
       )[0] || null
     )
   }

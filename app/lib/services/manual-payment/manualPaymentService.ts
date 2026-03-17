@@ -498,13 +498,14 @@ class ManualPaymentService {
             },
           ]
         } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
           return [
             chain,
             {
               nextBlock: null,
               lastScannedBlock: null,
               initializedAt,
-              error: err.message,
+              error: message,
             },
           ]
         }
@@ -679,16 +680,17 @@ class ManualPaymentService {
     try {
       latestBlock = await provider.getBlockNumber()
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
       scanState[chain] = {
         ...chainState,
         lastScanAt: nowIso(),
-        error: err.message,
+        error: message,
       }
       this.store.update('checkouts', checkout.id, {
         manualPayment: {
           ...manualPayment,
           scanState,
-          lastScanError: err.message,
+          lastScanError: message,
         },
       })
       return (

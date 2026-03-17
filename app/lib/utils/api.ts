@@ -106,7 +106,7 @@ export async function parseBody<T = Record<string, unknown>>(
       defaultCode: 'invalid_json_body',
       defaultMessage: 'Invalid JSON body',
     })
-    if (appError.status === 500) throw badRequest('Invalid JSON body')
+    if (appError.status === 500) throw appError
     throw appError
   }
 }

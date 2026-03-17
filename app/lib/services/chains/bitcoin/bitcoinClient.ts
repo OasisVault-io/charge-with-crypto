@@ -31,9 +31,16 @@ class BitcoinClient {
   }
 
   async getTransaction(txid: string): Promise<BitcoinTransaction | null> {
-    return this.fetchJson(
-      `/tx/${encodeURIComponent(txid)}`,
-    ) as Promise<BitcoinTransaction | null>
+    try {
+      return this.fetchJson(
+        `/tx/${encodeURIComponent(txid)}`,
+      ) as Promise<BitcoinTransaction | null>
+    } catch (error) {
+      if (error instanceof Error && error.message === 'bitcoin_http_404') {
+        return null
+      }
+      throw error
+    }
   }
 
   async getTipHeight() {

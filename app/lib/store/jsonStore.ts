@@ -65,6 +65,14 @@ class JsonStore implements StoreLike {
     return this.read(name).find((item) => item.id === id) || null
   }
 
+  delete<C extends CollectionName>(name: C, id: string): boolean {
+    const items = this.read(name)
+    const nextItems = items.filter((item) => item.id !== id)
+    if (nextItems.length === items.length) return false
+    this.write(name, nextItems)
+    return true
+  }
+
   insert<C extends CollectionName>(
     name: C,
     item: InsertableRecord<CollectionMap[C]>,
@@ -77,6 +85,9 @@ class JsonStore implements StoreLike {
       updatedAt: timestamp,
       ...item,
     } as CollectionMap[C]
+    if (items.some((entry) => entry.id === withMeta.id)) {
+      throw new Error(`duplicate_id:${withMeta.id}`)
+    }
     items.push(withMeta)
     this.write(name, items)
     return withMeta

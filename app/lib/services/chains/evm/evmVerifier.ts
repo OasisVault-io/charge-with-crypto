@@ -120,7 +120,10 @@ class EvmVerifier extends OnchainProvider {
       }
     }
 
-    const tokenAddress = normalizeAddress(assetConfig.addresses[this.chain])
+    const configuredTokenAddress = assetConfig.addresses[this.chain]
+    if (!configuredTokenAddress)
+      return { ok: false, reason: 'unsupported_asset' }
+    const tokenAddress = normalizeAddress(configuredTokenAddress)
     const log = (receipt.logs || []).find(
       (entry: TransferLogLike) =>
         normalizeAddress(entry.address) === tokenAddress &&

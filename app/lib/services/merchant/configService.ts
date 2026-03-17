@@ -40,6 +40,7 @@ class ConfigService {
   getPublicConfig() {
     return {
       appMode: configuredAppMode(this.config),
+      deployedAppUrl: this.config.baseUrl,
       chains: this.config.chains,
       assets: this.config.assets,
       fixedPriceAssets: Object.keys(this.config.assets).filter((asset) =>

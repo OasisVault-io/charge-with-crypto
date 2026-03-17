@@ -1,7 +1,15 @@
 import { useCheckoutPageContext } from './context/CheckoutPageContext'
 
 export function CheckoutBrandStage() {
-  const { description, heroParts } = useCheckoutPageContext()
+  const { checkout, description, heroParts, logoSrc, merchantName } =
+    useCheckoutPageContext()
+  const brandLogoSrc = checkout?.merchantLogoUrl
+    ? logoSrc
+    : '/oasisvault-isotype-green.png'
+  const brandLogoAlt =
+    merchantName && merchantName !== 'merchant'
+      ? `${merchantName} logo`
+      : 'OasisVault Logo'
 
   return (
     <section className="checkout-brand-stage">
@@ -10,9 +18,9 @@ export function CheckoutBrandStage() {
           <span className="brand-line">CHECKOUT</span>
           <span className="brand-line brand-line-accent">
             <img
-              alt="OasisVault Logo"
+              alt={brandLogoAlt}
               className="brand-isotype"
-              src="/oasisvault-isotype-green.png"
+              src={brandLogoSrc}
             />
             <span>{heroParts.lead}</span>
           </span>

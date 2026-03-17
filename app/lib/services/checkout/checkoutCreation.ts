@@ -8,7 +8,7 @@ import {
   getQuoteById,
   type QuoteRecord,
 } from '../payments/quoteService'
-import { badRequest, notFound } from '../shared/appError'
+import { badRequest, notFound, serviceUnavailable } from '../shared/appError'
 import {
   repositoriesFrom,
   type ServiceRepositories,
@@ -51,10 +51,15 @@ function saveIdempotentResponse(
   response: Record<string, unknown>,
 ) {
   const repositories = repositoriesFrom(source)
-  const existing = readIdempotentResponse(repositories, key, scope)
-  if (existing) return existing
-  repositories.idempotencyKeys.insert({ key, scope, response })
-  return response
+  const recordId = `idempotency:${encodeURIComponent(scope)}:${encodeURIComponent(key)}`
+  try {
+    repositories.idempotencyKeys.insert({ id: recordId, key, scope, response })
+    return response
+  } catch (error) {
+    const existing = readIdempotentResponse(source, key, scope)
+    if (existing) return existing
+    throw error
+  }
 }
 
 async function createCheckoutResponse({
@@ -209,7 +214,7 @@ async function createCheckoutResponse({
     cancelUrl: metadata.cancelUrl,
   })
 
-  const quotes = await Promise.all(
+  const quoteResults = await Promise.allSettled(
     routeCatalog.map((route) =>
       createQuote(repositories, priceService, config, {
         checkoutId: checkout.id,
@@ -220,6 +225,24 @@ async function createCheckoutResponse({
       }),
     ),
   )
+  const quotes = quoteResults.flatMap((result, index) => {
+    if (result.status === 'fulfilled') return [result.value]
+    const route = routeCatalog[index]
+    console.error('Failed to create quote for checkout route', {
+      checkoutId: checkout.id,
+      chain: route.chain,
+      asset: route.asset,
+      message:
+        result.reason instanceof Error
+          ? result.reason.message
+          : String(result.reason),
+    })
+    return []
+  })
+  if (!quotes.length) {
+    repositories.checkouts.delete(checkout.id)
+    throw serviceUnavailable('unable to create a quote for any checkout route')
+  }
 
   if (manualPaymentService && createManualPayment) {
     const manualPayment =
