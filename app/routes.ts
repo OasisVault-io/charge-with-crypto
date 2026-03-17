@@ -1,4 +1,4 @@
-import { type RouteConfig, index, route } from '@react-router/dev/routes';
+import { type RouteConfig, index, route } from '@react-router/dev/routes'
 
 export default [
   index('routes/home.tsx'),
@@ -21,9 +21,15 @@ export default [
   route('api/checkouts/:id', 'routes/api/checkouts.$id.ts'),
   route('api/checkouts/:id/status', 'routes/api/checkouts.$id.status.ts'),
   route('api/checkouts/:id/quote', 'routes/api/checkouts.$id.quote.ts'),
-  route('api/checkouts/:id/balance-scan', 'routes/api/checkouts.$id.balance-scan.ts'),
+  route(
+    'api/checkouts/:id/balance-scan',
+    'routes/api/checkouts.$id.balance-scan.ts',
+  ),
   route('api/checkouts/:id/submit-tx', 'routes/api/checkouts.$id.submit-tx.ts'),
-  route('api/checkouts/:id/manual-payment', 'routes/api/checkouts.$id.manual-payment.ts'),
+  route(
+    'api/checkouts/:id/manual-payment',
+    'routes/api/checkouts.$id.manual-payment.ts',
+  ),
   route('api/wallet/connect-intent', 'routes/api/wallet.connect-intent.ts'),
-  route('api/prices/:chain/:asset', 'routes/api/prices.$chain.$asset.ts')
-] satisfies RouteConfig;
+  route('api/prices/:chain/:asset', 'routes/api/prices.$chain.$asset.ts'),
+] satisfies RouteConfig

@@ -30,7 +30,11 @@
   body {
     margin: 0;
     background:
-      radial-gradient(circle at top left, rgba(35, 110, 58, 0.12), transparent 28rem),
+      radial-gradient(
+        circle at top left,
+        rgba(35, 110, 58, 0.12),
+        transparent 28rem
+      ),
       linear-gradient(180deg, #f3f2ec 0%, #f7f7f4 100%);
     color: var(--color-cwc-ink);
     font-family: var(--font-sans);

@@ -1,19 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
-import { defaultMerchantLogo } from './dashboard.shared';
+import { defaultMerchantLogo } from './dashboard.shared'
 
 type DashboardLogoImageProps = {
-  alt: string;
-  src: string;
-  className?: string;
-};
+  alt: string
+  src: string
+  className?: string
+}
 
-export function DashboardLogoImage({ alt, src, className }: DashboardLogoImageProps) {
-  const [currentSrc, setCurrentSrc] = useState(src || defaultMerchantLogo);
+export function DashboardLogoImage({
+  alt,
+  src,
+  className,
+}: DashboardLogoImageProps) {
+  const [currentSrc, setCurrentSrc] = useState(src || defaultMerchantLogo)
 
   useEffect(() => {
-    setCurrentSrc(src || defaultMerchantLogo);
-  }, [src]);
+    setCurrentSrc(src || defaultMerchantLogo)
+  }, [src])
 
   return (
     <img
@@ -22,6 +26,5 @@ export function DashboardLogoImage({ alt, src, className }: DashboardLogoImagePr
       src={currentSrc}
       onError={() => setCurrentSrc(defaultMerchantLogo)}
     />
-  );
+  )
 }
-

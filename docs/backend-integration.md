@@ -4,13 +4,17 @@ Use this guide for the real merchant integration path.
 
 ## Recommended flow
 
-1. Configure merchant branding, recipient addresses, webhook URL, and webhook secret.
+1. Configure merchant branding, recipient addresses, webhook URL, and webhook
+   secret.
 2. Store stable plan ids and product ids in Charge With Crypto.
 3. Choose the payment surface:
-   - human checkout via `POST /api/checkouts/resolve` or `POST /api/products/:id/checkouts`
+   - human checkout via `POST /api/checkouts/resolve` or
+     `POST /api/products/:id/checkouts`
    - agent access via `POST /api/products/:id/access`
-4. Implement `checkout.resolve` if your backend defines checkout terms dynamically.
-5. Handle `payment.confirmed` on the same webhook for both human and agent purchases.
+4. Implement `checkout.resolve` if your backend defines checkout terms
+   dynamically.
+5. Handle `payment.confirmed` on the same webhook for both human and agent
+   purchases.
 
 ## Product model
 
@@ -25,7 +29,8 @@ Important endpoints:
 - `POST /api/products/:id/checkouts`
 - `POST /api/products/:id/access`
 
-The product record carries stable metadata such as title, description, amount, merchant id, supported chains, and accepted assets.
+The product record carries stable metadata such as title, description, amount,
+merchant id, supported chains, and accepted assets.
 
 ## Main human endpoint
 
@@ -61,7 +66,10 @@ Example:
 }
 ```
 
-Use a stable `referenceId` for your own customer or entitlement mapping, and a unique `purchaseId` for each x402 purchase attempt. If x402 is enabled, this route returns payment requirements to an unpaid agent request and settles the same product through Base USDC.
+Use a stable `referenceId` for your own customer or entitlement mapping, and a
+unique `purchaseId` for each x402 purchase attempt. If x402 is enabled, this
+route returns payment requirements to an unpaid agent request and settles the
+same product through Base USDC.
 
 ## Merchant webhook events
 
@@ -112,9 +120,12 @@ Charge With Crypto sends:
 }
 ```
 
-Your backend should verify the signature, reconcile the payment, and unlock the product or service. `referenceId` is your stable reconciliation key; `purchaseId` is the one-time agent purchase key that prevents free x402 replays.
+Your backend should verify the signature, reconcile the payment, and unlock the
+product or service. `referenceId` is your stable reconciliation key;
+`purchaseId` is the one-time agent purchase key that prevents free x402 replays.
 
-The important point is that a hosted human checkout and an x402 agent purchase converge on the same confirmation event shape.
+The important point is that a hosted human checkout and an x402 agent purchase
+converge on the same confirmation event shape.
 
 ## Signature model
 
@@ -161,7 +172,8 @@ Use `POST /api/checkouts` only when:
 - you are running the public demo
 - you are operating an authenticated admin flow
 
-For real merchant traffic, prefer `POST /api/checkouts/resolve` or product-backed checkout creation.
+For real merchant traffic, prefer `POST /api/checkouts/resolve` or
+product-backed checkout creation.
 
 ## MCP
 

@@ -14,7 +14,8 @@ export async function loader({
   const url = new URL(request.url)
   return {
     checkoutId,
-    initialData: await getAppContext().checkoutService.getCheckoutBootstrap(checkoutId),
+    initialData:
+      await getAppContext().checkoutService.getCheckoutBootstrap(checkoutId),
     templateParam: String(url.searchParams.get('template') || ''),
   }
 }

@@ -1,15 +1,17 @@
 // @ts-nocheck
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const test = require('node:test');
-const { ProviderRegistry } = require('../app/lib/services/shared/provider');
-const { SqliteStore } = require('../app/lib/store/sqliteStore');
-const { invokeApi, ensureMerchantDefaults } = require('./helpers/apiHarness.ts');
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
+const test = require('node:test')
+const { ProviderRegistry } = require('../app/lib/services/shared/provider')
+const { SqliteStore } = require('../app/lib/store/sqliteStore')
+const { invokeApi, ensureMerchantDefaults } = require('./helpers/apiHarness.ts')
 
 test('product endpoints create stable product metadata and hosted checkouts from one merchant product', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-api-products-'));
+  const dir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'charge-with-crypto-api-products-'),
+  )
   const config = {
     env: 'test',
     port: 0,
@@ -24,7 +26,12 @@ test('product endpoints create stable product metadata and hosted checkouts from
     dashboardToken: 'dashboard_test_token',
     minConfirmations: 1,
     chains: {
-      base: { chainId: 8453, name: 'Base', nativeAsset: 'ETH', rpcUrlEnv: 'RPC_BASE' }
+      base: {
+        chainId: 8453,
+        name: 'Base',
+        nativeAsset: 'ETH',
+        rpcUrlEnv: 'RPC_BASE',
+      },
     },
     assets: {
       USDC: {
@@ -32,30 +39,49 @@ test('product endpoints create stable product metadata and hosted checkouts from
         decimals: 6,
         type: 'erc20',
         addresses: {
-          base: '0x2345678901234567890123456789012345678901'
-        }
+          base: '0x2345678901234567890123456789012345678901',
+        },
       },
-      ETH: { symbol: 'ETH', decimals: 18, type: 'native' }
-    }
-  };
+      ETH: { symbol: 'ETH', decimals: 18, type: 'native' },
+    },
+  }
 
-  const store = new SqliteStore(dir);
-  ensureMerchantDefaults(store, config);
+  const store = new SqliteStore(dir)
+  ensureMerchantDefaults(store, config)
   store.update('merchants', 'merchant_default', {
     recipientAddresses: {
-      base: '0xa9c424d119323495c3260ef16c7813a1133cd84e'
+      base: '0xa9c424d119323495c3260ef16c7813a1133cd84e',
     },
     enabledChains: ['base'],
-    defaultAcceptedAssets: ['USDC']
-  });
+    defaultAcceptedAssets: ['USDC'],
+  })
 
-  const providers = new ProviderRegistry();
-  providers.register('base', { verifyPayment: async ({ recipientAddress }) => ({ ok: true, reason: 'confirmed', confirmations: 2, recipientAddress }) });
+  const providers = new ProviderRegistry()
+  providers.register('base', {
+    verifyPayment: async ({ recipientAddress }) => ({
+      ok: true,
+      reason: 'confirmed',
+      confirmations: 2,
+      recipientAddress,
+    }),
+  })
   const priceService = {
-    getAssetPrice: async () => ({ priceUsd: 1, priceMicros: 1000000, source: 'fixed_peg', fetchedAt: new Date().toISOString() }),
-    quoteUsd: async ({ usdCents }) => ({ baseUnits: BigInt(usdCents) * 10000n, decimalAmount: String(Number(usdCents) / 100), priceUsd: 1, priceMicros: 1000000, source: 'fixed_peg', fetchedAt: new Date().toISOString() })
-  };
-  const ctx = { store, config, providers, priceService };
+    getAssetPrice: async () => ({
+      priceUsd: 1,
+      priceMicros: 1000000,
+      source: 'fixed_peg',
+      fetchedAt: new Date().toISOString(),
+    }),
+    quoteUsd: async ({ usdCents }) => ({
+      baseUnits: BigInt(usdCents) * 10000n,
+      decimalAmount: String(Number(usdCents) / 100),
+      priceUsd: 1,
+      priceMicros: 1000000,
+      source: 'fixed_peg',
+      fetchedAt: new Date().toISOString(),
+    }),
+  }
+  const ctx = { store, config, providers, priceService }
 
   const createdProduct = await invokeApi({
     method: 'POST',
@@ -70,46 +96,55 @@ test('product endpoints create stable product metadata and hosted checkouts from
       paymentRail: 'evm',
       enabledChains: ['base'],
       acceptedAssets: ['USDC'],
-      tags: ['api', 'agent']
+      tags: ['api', 'agent'],
     },
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(createdProduct.statusCode, 201);
-  assert.equal(createdProduct.json.product.id, 'api-access');
-  assert.equal(createdProduct.json.product.amountUsd, 7);
+  assert.equal(createdProduct.statusCode, 201)
+  assert.equal(createdProduct.json.product.id, 'api-access')
+  assert.equal(createdProduct.json.product.amountUsd, 7)
 
   const listed = await invokeApi({
     method: 'GET',
     url: '/api/products',
-    ctx
-  });
-  assert.equal(listed.statusCode, 200);
-  assert.ok((listed.json.products || []).some((product) => product.id === 'api-access'));
+    ctx,
+  })
+  assert.equal(listed.statusCode, 200)
+  assert.ok(
+    (listed.json.products || []).some((product) => product.id === 'api-access'),
+  )
 
   const detail = await invokeApi({
     method: 'GET',
     url: '/api/products/api-access',
-    ctx
-  });
-  assert.equal(detail.statusCode, 200);
-  assert.equal(detail.json.product.id, 'api-access');
-  assert.equal(detail.json.product.endpoints.accessUrl, 'http://127.0.0.1:0/api/products/api-access/access');
+    ctx,
+  })
+  assert.equal(detail.statusCode, 200)
+  assert.equal(detail.json.product.id, 'api-access')
+  assert.equal(
+    detail.json.product.endpoints.accessUrl,
+    'http://127.0.0.1:0/api/products/api-access/access',
+  )
 
   const checkout = await invokeApi({
     method: 'POST',
     url: '/api/products/api-access/checkouts',
     body: {
       referenceId: 'customer_42',
-      quantity: 3
+      quantity: 3,
     },
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(checkout.statusCode, 201);
-  assert.equal(checkout.json.checkout.productId, 'api-access');
-  assert.equal(checkout.json.checkout.referenceId, 'customer_42');
-  assert.equal(checkout.json.checkout.quantity, 3);
-  assert.equal(checkout.json.checkout.amountUsd, 21);
-  assert.ok(checkout.json.checkoutUrl.includes(`/checkout/${checkout.json.checkout.id}`));
-});
+  assert.equal(checkout.statusCode, 201)
+  assert.equal(checkout.json.checkout.productId, 'api-access')
+  assert.equal(checkout.json.checkout.referenceId, 'customer_42')
+  assert.equal(checkout.json.checkout.quantity, 3)
+  assert.equal(checkout.json.checkout.amountUsd, 21)
+  assert.ok(
+    checkout.json.checkoutUrl.includes(
+      `/checkout/${checkout.json.checkout.id}`,
+    ),
+  )
+})

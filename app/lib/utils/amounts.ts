@@ -1,62 +1,62 @@
 function pow10(decimals: number): bigint {
-	return 10n ** BigInt(decimals)
+  return 10n ** BigInt(decimals)
 }
 
 function decimalToBaseUnits(
-	value: string | number | bigint | null | undefined,
-	decimals: number,
+  value: string | number | bigint | null | undefined,
+  decimals: number,
 ): bigint {
-	const text = String(value ?? '').trim()
-	if (!/^\d+(\.\d+)?$/.test(text)) throw new Error('invalid decimal amount')
-	const [whole, fraction = ''] = text.split('.')
-	if (fraction.length > decimals) throw new Error('too many decimal places')
-	const padded = fraction.padEnd(decimals, '0')
-	return BigInt(whole) * pow10(decimals) + BigInt(padded || '0')
+  const text = String(value ?? '').trim()
+  if (!/^\d+(\.\d+)?$/.test(text)) throw new Error('invalid decimal amount')
+  const [whole, fraction = ''] = text.split('.')
+  if (fraction.length > decimals) throw new Error('too many decimal places')
+  const padded = fraction.padEnd(decimals, '0')
+  return BigInt(whole) * pow10(decimals) + BigInt(padded || '0')
 }
 
 function baseUnitsToDecimalString(
-	units: string | number | bigint,
-	decimals: number,
-	precision = decimals,
+  units: string | number | bigint,
+  decimals: number,
+  precision = decimals,
 ): string {
-	const value = BigInt(units)
-	const scale = pow10(decimals)
-	const whole = value / scale
-	const fraction = String(value % scale)
-		.padStart(decimals, '0')
-		.slice(0, precision)
-		.replace(/0+$/, '')
-	return fraction ? `${whole}.${fraction}` : String(whole)
+  const value = BigInt(units)
+  const scale = pow10(decimals)
+  const whole = value / scale
+  const fraction = String(value % scale)
+    .padStart(decimals, '0')
+    .slice(0, precision)
+    .replace(/0+$/, '')
+  return fraction ? `${whole}.${fraction}` : String(whole)
 }
 
 function usdToAssetBaseUnits({
-	usdCents,
-	priceMicros,
-	decimals,
+  usdCents,
+  priceMicros,
+  decimals,
 }: {
-	usdCents: number
-	priceMicros: number
-	decimals: number
+  usdCents: number
+  priceMicros: number
+  decimals: number
 }): bigint {
-	if (!Number.isInteger(usdCents) || usdCents <= 0)
-		throw new Error('invalid usd cents')
-	if (!Number.isInteger(priceMicros) || priceMicros <= 0)
-		throw new Error('invalid price')
-	const numerator = BigInt(usdCents) * pow10(decimals) * 10000n
-	const denominator = BigInt(priceMicros)
-	return (numerator + denominator - 1n) / denominator
+  if (!Number.isInteger(usdCents) || usdCents <= 0)
+    throw new Error('invalid usd cents')
+  if (!Number.isInteger(priceMicros) || priceMicros <= 0)
+    throw new Error('invalid price')
+  const numerator = BigInt(usdCents) * pow10(decimals) * 10000n
+  const denominator = BigInt(priceMicros)
+  return (numerator + denominator - 1n) / denominator
 }
 
 function normalizeUsdCents(value: string | number | null | undefined): number {
-	const text = String(value ?? '').trim()
-	if (!/^\d+(\.\d{1,2})?$/.test(text)) throw new Error('invalid usd amount')
-	const [whole, fraction = ''] = text.split('.')
-	return Number(BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0')))
+  const text = String(value ?? '').trim()
+  if (!/^\d+(\.\d{1,2})?$/.test(text)) throw new Error('invalid usd amount')
+  const [whole, fraction = ''] = text.split('.')
+  return Number(BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0')))
 }
 
 export {
-	decimalToBaseUnits,
-	baseUnitsToDecimalString,
-	usdToAssetBaseUnits,
-	normalizeUsdCents,
+  decimalToBaseUnits,
+  baseUnitsToDecimalString,
+  usdToAssetBaseUnits,
+  normalizeUsdCents,
 }

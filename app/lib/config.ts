@@ -1,80 +1,99 @@
 // @ts-nocheck
-import fs from 'node:fs';
-import path from 'node:path';
-import { z } from 'zod';
+import fs from 'node:fs'
+import path from 'node:path'
+import { z } from 'zod'
 
 function loadEnv(filePath) {
-  if (!fs.existsSync(filePath)) return;
-  const content = fs.readFileSync(filePath, 'utf8');
+  if (!fs.existsSync(filePath)) return
+  const content = fs.readFileSync(filePath, 'utf8')
   for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const idx = trimmed.indexOf('=');
-    if (idx === -1) continue;
-    const key = trimmed.slice(0, idx).trim();
-    const value = trimmed.slice(idx + 1).trim();
-    if (!(key in process.env)) process.env[key] = value;
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const idx = trimmed.indexOf('=')
+    if (idx === -1) continue
+    const key = trimmed.slice(0, idx).trim()
+    const value = trimmed.slice(idx + 1).trim()
+    if (!(key in process.env)) process.env[key] = value
   }
 }
 
-const projectRootCandidates = [
-  process.cwd(),
-  path.resolve(process.cwd(), '..')
-];
-const projectRoot = projectRootCandidates.find((candidate) => fs.existsSync(path.join(candidate, 'config', 'chains.json'))) || process.cwd();
-loadEnv(path.join(projectRoot, '.env'));
+const projectRootCandidates = [process.cwd(), path.resolve(process.cwd(), '..')]
+const projectRoot =
+  projectRootCandidates.find((candidate) =>
+    fs.existsSync(path.join(candidate, 'config', 'chains.json')),
+  ) || process.cwd()
+loadEnv(path.join(projectRoot, '.env'))
 
-const chainsConfigPath = path.join(projectRoot, 'config', 'chains.json');
-const chainsConfig = JSON.parse(fs.readFileSync(chainsConfigPath, 'utf8'));
+const chainsConfigPath = path.join(projectRoot, 'config', 'chains.json')
+const chainsConfig = JSON.parse(fs.readFileSync(chainsConfigPath, 'utf8'))
 
-const stringOrDefault = (fallback) => z.string().trim().default(fallback);
-const urlString = (fallback) => z.string().trim().url().default(fallback);
-const optionalTrimmed = () => z.string().trim().optional().transform((value) => value || '');
-const integerDefault = (fallback) => z.coerce.number().int().default(fallback);
-const csvString = (fallback) => z.string().trim().default(fallback).transform((value) =>
-  [...new Set(String(value || '')
-    .split(',')
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean))]
-);
-const booleanish = (fallback = false) => z.preprocess((value) => {
-  if (value == null || value === '') return fallback;
-  const candidate = String(value).trim().toLowerCase();
-  if (['1', 'true', 'yes', 'on'].includes(candidate)) return true;
-  if (['0', 'false', 'no', 'off'].includes(candidate)) return false;
-  return fallback;
-}, z.boolean());
+const stringOrDefault = (fallback) => z.string().trim().default(fallback)
+const urlString = (fallback) => z.string().trim().url().default(fallback)
+const optionalTrimmed = () =>
+  z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || '')
+const integerDefault = (fallback) => z.coerce.number().int().default(fallback)
+const csvString = (fallback) =>
+  z
+    .string()
+    .trim()
+    .default(fallback)
+    .transform((value) => [
+      ...new Set(
+        String(value || '')
+          .split(',')
+          .map((entry) => entry.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    ])
+const booleanish = (fallback = false) =>
+  z.preprocess((value) => {
+    if (value == null || value === '') return fallback
+    const candidate = String(value).trim().toLowerCase()
+    if (['1', 'true', 'yes', 'on'].includes(candidate)) return true
+    if (['0', 'false', 'no', 'off'].includes(candidate)) return false
+    return fallback
+  }, z.boolean())
 
 function normalizeAppMode(value, env = 'development') {
-  const fallback = env === 'production' ? 'production' : 'demo';
-  const candidate = String(value || fallback).trim().toLowerCase();
-  return candidate === 'production' ? 'production' : 'demo';
+  const fallback = env === 'production' ? 'production' : 'demo'
+  const candidate = String(value || fallback)
+    .trim()
+    .toLowerCase()
+  return candidate === 'production' ? 'production' : 'demo'
 }
 
 function validateRuntimeConfig(input) {
-  const appMode = normalizeAppMode(input?.appMode, input?.env || 'development');
-  if (appMode !== 'production') return;
+  const appMode = normalizeAppMode(input?.appMode, input?.env || 'development')
+  if (appMode !== 'production') return
 
-  const dashboardToken = String(input?.dashboardToken || '').trim();
+  const dashboardToken = String(input?.dashboardToken || '').trim()
   if (!dashboardToken || dashboardToken === 'change_me_before_public_deploy') {
-    throw new Error('DASHBOARD_TOKEN must be set to a non-default value when APP_MODE=production');
+    throw new Error(
+      'DASHBOARD_TOKEN must be set to a non-default value when APP_MODE=production',
+    )
   }
 
   if (input?.x402Enabled) {
-    const apiKeyId = String(input?.cdpApiKeyId || '').trim();
-    const apiKeySecret = String(input?.cdpApiKeySecret || '').trim();
+    const apiKeyId = String(input?.cdpApiKeyId || '').trim()
+    const apiKeySecret = String(input?.cdpApiKeySecret || '').trim()
     if (!apiKeyId || !apiKeySecret) {
-      throw new Error('CDP_API_KEY_ID and CDP_API_KEY_SECRET must be set when X402 is enabled in production');
+      throw new Error(
+        'CDP_API_KEY_ID and CDP_API_KEY_SECRET must be set when X402 is enabled in production',
+      )
     }
   }
 }
 
 function normalizeBoolean(value, fallback = false) {
-  if (value == null || value === '') return fallback;
-  const candidate = String(value).trim().toLowerCase();
-  if (['1', 'true', 'yes', 'on'].includes(candidate)) return true;
-  if (['0', 'false', 'no', 'off'].includes(candidate)) return false;
-  return fallback;
+  if (value == null || value === '') return fallback
+  const candidate = String(value).trim().toLowerCase()
+  if (['1', 'true', 'yes', 'on'].includes(candidate)) return true
+  if (['0', 'false', 'no', 'off'].includes(candidate)) return false
+  return fallback
 }
 
 const rawEnvSchema = z.object({
@@ -107,19 +126,21 @@ const rawEnvSchema = z.object({
   X402_ENABLED: booleanish(false),
   X402_FACILITATOR_URL: optionalTrimmed(),
   X402_BASE_NETWORK: stringOrDefault('eip155:8453'),
-  X402_BASE_ASSET: stringOrDefault('USDC')
-});
+  X402_BASE_ASSET: stringOrDefault('USDC'),
+})
 
 function parseRuntimeEnv(env) {
-  const parsed = rawEnvSchema.safeParse(env);
+  const parsed = rawEnvSchema.safeParse(env)
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; ');
-    throw new Error(`invalid runtime env: ${issues}`);
+    const issues = parsed.error.issues
+      .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+      .join('; ')
+    throw new Error(`invalid runtime env: ${issues}`)
   }
-  return parsed.data;
+  return parsed.data
 }
 
-const parsedEnv = parseRuntimeEnv(process.env);
+const parsedEnv = parseRuntimeEnv(process.env)
 
 const config = {
   env: parsedEnv.NODE_ENV,
@@ -142,20 +163,29 @@ const config = {
   manualPaymentStartIndex: parsedEnv.MANUAL_PAYMENT_START_INDEX,
   manualPaymentSweepSignerUrl: parsedEnv.MANUAL_PAYMENT_SWEEP_SIGNER_URL,
   manualPaymentSweepSignerSecret: parsedEnv.MANUAL_PAYMENT_SWEEP_SIGNER_SECRET,
-  manualPaymentSweepSponsorPrivateKey: parsedEnv.MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY,
+  manualPaymentSweepSponsorPrivateKey:
+    parsedEnv.MANUAL_PAYMENT_SWEEP_SPONSOR_PRIVATE_KEY,
   manualPaymentScanIntervalMs: parsedEnv.MANUAL_PAYMENT_SCAN_INTERVAL_MS,
   manualPaymentScanBlockWindow: parsedEnv.MANUAL_PAYMENT_SCAN_BLOCK_WINDOW,
   bitcoinEsploraBaseUrl: parsedEnv.BTC_ESPLORA_BASE_URL,
   cdpApiKeyId: parsedEnv.CDP_API_KEY_ID,
   cdpApiKeySecret: parsedEnv.CDP_API_KEY_SECRET,
-  x402Enabled: parsedEnv.X402_ENABLED || Boolean(parsedEnv.CDP_API_KEY_ID && parsedEnv.CDP_API_KEY_SECRET),
+  x402Enabled:
+    parsedEnv.X402_ENABLED ||
+    Boolean(parsedEnv.CDP_API_KEY_ID && parsedEnv.CDP_API_KEY_SECRET),
   x402FacilitatorUrl: parsedEnv.X402_FACILITATOR_URL,
   x402BaseNetwork: parsedEnv.X402_BASE_NETWORK,
   x402BaseAsset: parsedEnv.X402_BASE_ASSET,
   chains: chainsConfig.chains,
-  assets: chainsConfig.assets
-};
+  assets: chainsConfig.assets,
+}
 
-validateRuntimeConfig(config);
+validateRuntimeConfig(config)
 
-export { config, projectRoot, normalizeAppMode, validateRuntimeConfig, normalizeBoolean };
+export {
+  config,
+  projectRoot,
+  normalizeAppMode,
+  validateRuntimeConfig,
+  normalizeBoolean,
+}

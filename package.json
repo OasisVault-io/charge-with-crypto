@@ -9,12 +9,12 @@
     "build:rr7": "react-router build --config vite.react-router.config.ts",
     "dev:rr7": "react-router dev --config vite.react-router.config.ts",
     "dev": "react-router dev --config vite.react-router.config.ts",
+    "format": "prettier --write .",
     "manual:sweep": "node --import tsx scripts/manual-sweep.ts",
     "routes:rr7": "react-router routes --config vite.react-router.config.ts",
     "start": "react-router-serve ./build/server/index.js",
     "test": "node --import tsx --test tests/*.test.ts",
-    "typecheck": "tsc -p tsconfig.rr7.json --noEmit",
-    "typecheck:rr7": "tsc -p tsconfig.rr7.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@coinbase/x402": "^2.1.0",

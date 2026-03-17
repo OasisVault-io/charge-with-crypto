@@ -1,13 +1,13 @@
 type DashboardAuthGateProps = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  authInput: string;
-  authStatus: string;
-  submitLabel: string;
-  onAuthInputChange: (value: string) => void;
-  onSubmit: () => Promise<void>;
-};
+  eyebrow: string
+  title: string
+  description: string
+  authInput: string
+  authStatus: string
+  submitLabel: string
+  onAuthInputChange: (value: string) => void
+  onSubmit: () => Promise<void>
+}
 
 export function DashboardAuthGate({
   eyebrow,
@@ -17,7 +17,7 @@ export function DashboardAuthGate({
   authStatus,
   submitLabel,
   onAuthInputChange,
-  onSubmit
+  onSubmit,
 }: DashboardAuthGateProps) {
   return (
     <section className="card dashboard-topbar">
@@ -29,8 +29,8 @@ export function DashboardAuthGate({
       <form
         className="dashboard-auth-form"
         onSubmit={async (event) => {
-          event.preventDefault();
-          await onSubmit();
+          event.preventDefault()
+          await onSubmit()
         }}
       >
         <label>
@@ -42,10 +42,11 @@ export function DashboardAuthGate({
             onChange={(event) => onAuthInputChange(event.target.value)}
           />
         </label>
-        <button className="primary-button" type="submit">{submitLabel}</button>
+        <button className="primary-button" type="submit">
+          {submitLabel}
+        </button>
         <div className="muted">{authStatus}</div>
       </form>
     </section>
-  );
+  )
 }
-

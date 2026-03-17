@@ -18,16 +18,16 @@ Both flows end in the same payment confirmation path.
 
 There are three main ways to create or resolve a payable session:
 
-1. `POST /api/checkouts`
-   Use this for direct admin usage.
+1. `POST /api/checkouts` Use this for direct admin usage.
 
-2. `POST /api/checkouts/resolve`
-   Use this for backend-driven merchant integrations.
+2. `POST /api/checkouts/resolve` Use this for backend-driven merchant
+   integrations.
 
-3. `POST /api/products/:id/checkouts`
-   Use this when you want a stable product to mint a human checkout.
+3. `POST /api/products/:id/checkouts` Use this when you want a stable product to
+   mint a human checkout.
 
-`/api/checkouts/resolve` calls the merchant webhook with `checkout.resolve`, receives the final checkout definition, then creates the hosted checkout.
+`/api/checkouts/resolve` calls the merchant webhook with `checkout.resolve`,
+receives the final checkout definition, then creates the hosted checkout.
 
 ## Hosted checkout
 
@@ -57,9 +57,11 @@ When x402 is enabled:
 2. Charge With Crypto returns the x402 payment requirements
 3. the agent pays over Base USDC
 4. the same underlying sellable is marked paid
-5. `payment.confirmed` is emitted with the matching `productId`, `quantity`, `purchaseId`, and `purchaseFlow`
+5. `payment.confirmed` is emitted with the matching `productId`, `quantity`,
+   `purchaseId`, and `purchaseFlow`
 
-There is also a checkout-scoped x402 route at `POST /api/x402/checkouts/:id` when you want an agent to pay an already-created hosted checkout.
+There is also a checkout-scoped x402 route at `POST /api/x402/checkouts/:id`
+when you want an agent to pay an already-created hosted checkout.
 
 ## Wallet pay
 
@@ -94,7 +96,8 @@ In xpub-only mode:
 
 In legacy mnemonic mode:
 
-- the app can also sweep deposits automatically if sponsor/signer config is present
+- the app can also sweep deposits automatically if sponsor/signer config is
+  present
 
 ## Payment confirmation
 
@@ -103,7 +106,8 @@ After successful verification:
 1. a payment record is stored
 2. the checkout is marked `paid`
 3. a `payment.confirmed` event is created
-4. webhook delivery is dispatched asynchronously so merchant latency does not block payment confirmation
+4. webhook delivery is dispatched asynchronously so merchant latency does not
+   block payment confirmation
 
 ## MCP
 
@@ -114,12 +118,15 @@ After successful verification:
 - creating a hosted checkout for a human
 - getting x402 access details for an agent
 
-The MCP server is an orchestration surface, not a second payment engine. Actual settlement still happens through hosted checkout or x402.
+The MCP server is an orchestration surface, not a second payment engine. Actual
+settlement still happens through hosted checkout or x402.
 
 ## UI ownership
 
 The canonical route ownership is:
 
 - `app/routes/*` owns the new React Router v7 route tree and resource routes
-- `app/lib/*` owns the shared payment, product, x402, MCP, and persistence logic used by those routes
-- `app/styles/*` contains the checkout and dashboard presentation layer used by the RR7 app
+- `app/lib/*` owns the shared payment, product, x402, MCP, and persistence logic
+  used by those routes
+- `app/styles/*` contains the checkout and dashboard presentation layer used by
+  the RR7 app

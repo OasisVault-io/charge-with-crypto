@@ -1,6 +1,7 @@
 # Merchant Integration
 
-The canonical integration guide now lives at [`docs/backend-integration.md`](./backend-integration.md).
+The canonical integration guide now lives at
+[`docs/backend-integration.md`](./backend-integration.md).
 
 Use that document for:
 

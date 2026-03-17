@@ -47,7 +47,8 @@ npm run dev
 
 This starts the React Router v7 app on `http://127.0.0.1:4173`.
 
-The RR7 app owns the checkout, dashboard, products, x402, MCP, and core API route modules.
+The RR7 app owns the checkout, dashboard, products, x402, MCP, and core API
+route modules.
 
 ## Build
 
@@ -67,6 +68,6 @@ npm start
 
 ```bash
 npm run typecheck
-npm run typecheck:rr7
+npm run typecheck
 npm test
 ```

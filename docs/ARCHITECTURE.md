@@ -4,37 +4,36 @@
 
 The important boundary is:
 
-- `app/` owns the React Router v7 route tree and canonical server-facing structure
-- `app/lib/*` owns the checkout engine, store, and blockchain services used by those routes
+- `app/` owns the React Router v7 route tree and canonical server-facing
+  structure
+- `app/lib/*` owns the checkout engine, store, and blockchain services used by
+  those routes
 
 ## Main directories
 
 ### `app/`
 
-- `app/routes/*`
-  RR7 UI routes and resource routes
-- `app/lib/services/*Service.ts`
-  route-facing orchestration where no same-name core service exists
-- `app/lib/services/core/*`
-  shared checkout, product, x402, MCP, payment, and webhook logic used by RR7 routes and services, including direct route-facing entrypoints where the facade was redundant
-- `app/lib/runtime.ts`
-  runtime singleton for app config and backend context
-- `app/lib/store/*`
-  persistence adapters
-- `app/lib/db/*`
-  Drizzle schema and database setup
-- `app/lib/utils/*`
-  shared backend validation, chain helpers, and HTTP utilities
-- `app/components/*`
-  RR7 route components for the dashboard, checkout, and shared client helpers
-- `app/app.css`
-  Tailwind v4 theme layer and RR7 base tokens
-- `app/styles/checkout-dashboard.css`
-  checkout and dashboard styling used by the RR7 route components
+- `app/routes/*` RR7 UI routes and resource routes
+- `app/lib/services/*Service.ts` route-facing orchestration where no same-name
+  core service exists
+- `app/lib/services/core/*` shared checkout, product, x402, MCP, payment, and
+  webhook logic used by RR7 routes and services, including direct route-facing
+  entrypoints where the facade was redundant
+- `app/lib/runtime.ts` runtime singleton for app config and backend context
+- `app/lib/store/*` persistence adapters
+- `app/lib/db/*` Drizzle schema and database setup
+- `app/lib/utils/*` shared backend validation, chain helpers, and HTTP utilities
+- `app/components/*` RR7 route components for the dashboard, checkout, and
+  shared client helpers
+- `app/app.css` Tailwind v4 theme layer and RR7 base tokens
+- `app/styles/checkout-dashboard.css` checkout and dashboard styling used by the
+  RR7 route components
 
 ## Request flow today
 
 - `app/routes/*` renders the route tree
 - `app/routes/api/*` serves the checkout/dashboard/product/x402 API surface
-- `app/lib/services/*Service.ts` and selected `app/lib/services/core/*Service.ts` files orchestrate route work using direct imports from `app/lib/store/*`, `app/lib/db/*`, and `app/lib/utils/*`
+- `app/lib/services/*Service.ts` and selected
+  `app/lib/services/core/*Service.ts` files orchestrate route work using direct
+  imports from `app/lib/store/*`, `app/lib/db/*`, and `app/lib/utils/*`
 - route loaders bootstrap dashboard and checkout state for native RR7 components

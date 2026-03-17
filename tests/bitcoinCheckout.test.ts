@@ -1,26 +1,38 @@
 // @ts-nocheck
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const test = require('node:test');
-const { BIP32Factory } = require('bip32');
-const ecc = require('tiny-secp256k1');
-const { BitcoinAddressService } = require('../app/lib/services/chains/bitcoin/bitcoinAddressService');
-const { BitcoinManualPaymentService } = require('../app/lib/services/chains/bitcoin/bitcoinManualPaymentService');
-const { CompositeManualPaymentService } = require('../app/lib/services/manual-payment/compositeManualPaymentService');
-const { ProviderRegistry } = require('../app/lib/services/shared/provider');
-const { SqliteStore } = require('../app/lib/store/sqliteStore');
-const { invokeApi, ensureMerchantDefaults } = require('./helpers/apiHarness.ts');
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
+const test = require('node:test')
+const { BIP32Factory } = require('bip32')
+const ecc = require('tiny-secp256k1')
+const {
+  BitcoinAddressService,
+} = require('../app/lib/services/chains/bitcoin/bitcoinAddressService')
+const {
+  BitcoinManualPaymentService,
+} = require('../app/lib/services/chains/bitcoin/bitcoinManualPaymentService')
+const {
+  CompositeManualPaymentService,
+} = require('../app/lib/services/manual-payment/compositeManualPaymentService')
+const { ProviderRegistry } = require('../app/lib/services/shared/provider')
+const { SqliteStore } = require('../app/lib/store/sqliteStore')
+const { invokeApi, ensureMerchantDefaults } = require('./helpers/apiHarness.ts')
 
-const bip32 = BIP32Factory(ecc);
+const bip32 = BIP32Factory(ecc)
 
 function merchantXpub() {
-  return bip32.fromSeed(Buffer.alloc(32, 9)).derivePath("m/84'/0'/0'").neutered().toBase58();
+  return bip32
+    .fromSeed(Buffer.alloc(32, 9))
+    .derivePath("m/84'/0'/0'")
+    .neutered()
+    .toBase58()
 }
 
 test('bitcoin checkout allocates a unique settlement address and exposes manual BTC payment details', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-bitcoin-'));
+  const dir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'charge-with-crypto-bitcoin-'),
+  )
   const config = {
     env: 'test',
     port: 0,
@@ -34,46 +46,81 @@ test('bitcoin checkout allocates a unique settlement address and exposes manual 
     webhookSecretFallback: 'fallback',
     minConfirmations: 1,
     chains: {
-      bitcoin: { name: 'Bitcoin', network: 'mainnet', nativeAsset: 'BTC' }
+      bitcoin: { name: 'Bitcoin', network: 'mainnet', nativeAsset: 'BTC' },
     },
     assets: {
-      BTC: { symbol: 'BTC', decimals: 8, type: 'native' }
-    }
-  };
+      BTC: { symbol: 'BTC', decimals: 8, type: 'native' },
+    },
+  }
 
-  const store = new SqliteStore(dir);
-  ensureMerchantDefaults(store, config);
+  const store = new SqliteStore(dir)
+  ensureMerchantDefaults(store, config)
   store.update('merchants', 'merchant_default', {
     recipientAddresses: {},
     bitcoinXpub: merchantXpub(),
     enabledChains: ['bitcoin'],
     manualPaymentEnabledChains: ['bitcoin'],
-    defaultAcceptedAssets: ['BTC']
-  });
+    defaultAcceptedAssets: ['BTC'],
+  })
 
-  const bitcoinAddressService = new BitcoinAddressService({ store, config });
+  const bitcoinAddressService = new BitcoinAddressService({ store, config })
   const manualPaymentService = new CompositeManualPaymentService({
     evmService: {
       isConfigured: () => false,
-      status: () => ({ configured: false, sponsorAddress: '', derivationPath: '' }),
-      createCheckoutManualPayment: async () => ({ available: false, enabledChains: [], acceptedAssets: [] }),
+      status: () => ({
+        configured: false,
+        sponsorAddress: '',
+        derivationPath: '',
+      }),
+      createCheckoutManualPayment: async () => ({
+        available: false,
+        enabledChains: [],
+        acceptedAssets: [],
+      }),
       reconcileCheckout: async (checkout) => checkout,
-      getCheckoutDetails: async () => ({ available: false })
+      getCheckoutDetails: async () => ({ available: false }),
     },
-    bitcoinService: new BitcoinManualPaymentService({ store, config })
-  });
-  const providers = new ProviderRegistry();
+    bitcoinService: new BitcoinManualPaymentService({ store, config }),
+  })
+  const providers = new ProviderRegistry()
   providers.register('bitcoin', {
-    verifyPayment: async ({ recipientAddress }) => ({ ok: true, reason: 'confirmed', confirmations: 2, recipientAddress })
-  });
+    verifyPayment: async ({ recipientAddress }) => ({
+      ok: true,
+      reason: 'confirmed',
+      confirmations: 2,
+      recipientAddress,
+    }),
+  })
   const priceService = {
-    getAssetPrice: async () => ({ priceUsd: 60000, priceMicros: 60000000000, source: 'test', fetchedAt: new Date().toISOString() }),
-    quoteUsd: async () => ({ baseUnits: 100000n, decimalAmount: '0.001', priceUsd: 60000, priceMicros: 60000000000, source: 'test', fetchedAt: new Date().toISOString() })
-  };
+    getAssetPrice: async () => ({
+      priceUsd: 60000,
+      priceMicros: 60000000000,
+      source: 'test',
+      fetchedAt: new Date().toISOString(),
+    }),
+    quoteUsd: async () => ({
+      baseUnits: 100000n,
+      decimalAmount: '0.001',
+      priceUsd: 60000,
+      priceMicros: 60000000000,
+      source: 'test',
+      fetchedAt: new Date().toISOString(),
+    }),
+  }
   const balanceService = {
-    scanQuotes: async () => ({ 'bitcoin:BTC': { raw: '250000', display: '0.0025' } })
-  };
-  const ctx = { store, config, providers, priceService, balanceService, manualPaymentService, bitcoinAddressService };
+    scanQuotes: async () => ({
+      'bitcoin:BTC': { raw: '250000', display: '0.0025' },
+    }),
+  }
+  const ctx = {
+    store,
+    config,
+    providers,
+    priceService,
+    balanceService,
+    manualPaymentService,
+    bitcoinAddressService,
+  }
 
   const created = await invokeApi({
     method: 'POST',
@@ -83,29 +130,29 @@ test('bitcoin checkout allocates a unique settlement address and exposes manual 
       title: 'Bitcoin plan',
       amountUsd: 60,
       acceptedAssets: ['BTC'],
-      enabledChains: ['bitcoin']
+      enabledChains: ['bitcoin'],
     },
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(created.statusCode, 201);
-  assert.equal(created.json.checkout.enabledChains[0], 'bitcoin');
-  assert.equal(created.json.checkout.acceptedAssets[0], 'BTC');
-  assert.match(created.json.checkout.recipientByChain.bitcoin, /^bc1/);
-  assert.equal(created.json.checkout.bitcoinSettlement.addressSource, 'xpub');
-  assert.equal(created.json.checkout.manualPayment.available, true);
-  assert.equal(created.json.checkout.manualPayment.routes[0].chain, 'bitcoin');
+  assert.equal(created.statusCode, 201)
+  assert.equal(created.json.checkout.enabledChains[0], 'bitcoin')
+  assert.equal(created.json.checkout.acceptedAssets[0], 'BTC')
+  assert.match(created.json.checkout.recipientByChain.bitcoin, /^bc1/)
+  assert.equal(created.json.checkout.bitcoinSettlement.addressSource, 'xpub')
+  assert.equal(created.json.checkout.manualPayment.available, true)
+  assert.equal(created.json.checkout.manualPayment.routes[0].chain, 'bitcoin')
 
   const manual = await invokeApi({
     method: 'GET',
     url: `/api/checkouts/${created.json.checkout.id}/manual-payment`,
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(manual.statusCode, 200);
-  assert.equal(manual.json.available, true);
-  assert.equal(manual.json.routes[0].rail, 'bitcoin');
-  assert.match(manual.json.paymentUri, /^bitcoin:/);
+  assert.equal(manual.statusCode, 200)
+  assert.equal(manual.json.available, true)
+  assert.equal(manual.json.routes[0].rail, 'bitcoin')
+  assert.match(manual.json.paymentUri, /^bitcoin:/)
 
   const paid = await invokeApi({
     method: 'POST',
@@ -114,18 +161,20 @@ test('bitcoin checkout allocates a unique settlement address and exposes manual 
       txHash: `${'b'.repeat(64)}`,
       chain: 'bitcoin',
       asset: 'BTC',
-      walletAddress: created.json.checkout.recipientByChain.bitcoin
+      walletAddress: created.json.checkout.recipientByChain.bitcoin,
     },
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(paid.statusCode, 200);
-  assert.equal(paid.json.verification.ok, true);
-  assert.equal(paid.json.payment.chain, 'bitcoin');
-});
+  assert.equal(paid.statusCode, 200)
+  assert.equal(paid.json.verification.ok, true)
+  assert.equal(paid.json.payment.chain, 'bitcoin')
+})
 
 test('bitcoin checkout supports manual BTC details when using a static merchant receiving address', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-bitcoin-static-'));
+  const dir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'charge-with-crypto-bitcoin-static-'),
+  )
   const config = {
     env: 'test',
     port: 0,
@@ -139,46 +188,80 @@ test('bitcoin checkout supports manual BTC details when using a static merchant 
     webhookSecretFallback: 'fallback',
     minConfirmations: 1,
     chains: {
-      bitcoin: { name: 'Bitcoin', network: 'mainnet', nativeAsset: 'BTC' }
+      bitcoin: { name: 'Bitcoin', network: 'mainnet', nativeAsset: 'BTC' },
     },
     assets: {
-      BTC: { symbol: 'BTC', decimals: 8, type: 'native' }
-    }
-  };
+      BTC: { symbol: 'BTC', decimals: 8, type: 'native' },
+    },
+  }
 
-  const store = new SqliteStore(dir);
-  ensureMerchantDefaults(store, config);
+  const store = new SqliteStore(dir)
+  ensureMerchantDefaults(store, config)
   store.update('merchants', 'merchant_default', {
     recipientAddresses: {
-      bitcoin: '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw'
+      bitcoin: '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw',
     },
     enabledChains: ['bitcoin'],
     manualPaymentEnabledChains: ['bitcoin'],
-    defaultAcceptedAssets: ['BTC']
-  });
+    defaultAcceptedAssets: ['BTC'],
+  })
 
   const manualPaymentService = new CompositeManualPaymentService({
     evmService: {
       isConfigured: () => false,
-      status: () => ({ configured: false, sponsorAddress: '', derivationPath: '' }),
-      createCheckoutManualPayment: async () => ({ available: false, enabledChains: [], acceptedAssets: [] }),
+      status: () => ({
+        configured: false,
+        sponsorAddress: '',
+        derivationPath: '',
+      }),
+      createCheckoutManualPayment: async () => ({
+        available: false,
+        enabledChains: [],
+        acceptedAssets: [],
+      }),
       reconcileCheckout: async (checkout) => checkout,
-      getCheckoutDetails: async () => ({ available: false })
+      getCheckoutDetails: async () => ({ available: false }),
     },
-    bitcoinService: new BitcoinManualPaymentService({ store, config })
-  });
-  const providers = new ProviderRegistry();
+    bitcoinService: new BitcoinManualPaymentService({ store, config }),
+  })
+  const providers = new ProviderRegistry()
   providers.register('bitcoin', {
-    verifyPayment: async ({ recipientAddress }) => ({ ok: true, reason: 'confirmed', confirmations: 2, recipientAddress })
-  });
+    verifyPayment: async ({ recipientAddress }) => ({
+      ok: true,
+      reason: 'confirmed',
+      confirmations: 2,
+      recipientAddress,
+    }),
+  })
   const priceService = {
-    getAssetPrice: async () => ({ priceUsd: 60000, priceMicros: 60000000000, source: 'test', fetchedAt: new Date().toISOString() }),
-    quoteUsd: async () => ({ baseUnits: 100000n, decimalAmount: '0.001', priceUsd: 60000, priceMicros: 60000000000, source: 'test', fetchedAt: new Date().toISOString() })
-  };
+    getAssetPrice: async () => ({
+      priceUsd: 60000,
+      priceMicros: 60000000000,
+      source: 'test',
+      fetchedAt: new Date().toISOString(),
+    }),
+    quoteUsd: async () => ({
+      baseUnits: 100000n,
+      decimalAmount: '0.001',
+      priceUsd: 60000,
+      priceMicros: 60000000000,
+      source: 'test',
+      fetchedAt: new Date().toISOString(),
+    }),
+  }
   const balanceService = {
-    scanQuotes: async () => ({ 'bitcoin:BTC': { raw: '250000', display: '0.0025' } })
-  };
-  const ctx = { store, config, providers, priceService, balanceService, manualPaymentService };
+    scanQuotes: async () => ({
+      'bitcoin:BTC': { raw: '250000', display: '0.0025' },
+    }),
+  }
+  const ctx = {
+    store,
+    config,
+    providers,
+    priceService,
+    balanceService,
+    manualPaymentService,
+  }
 
   const created = await invokeApi({
     method: 'POST',
@@ -188,29 +271,34 @@ test('bitcoin checkout supports manual BTC details when using a static merchant 
       title: 'Bitcoin static address plan',
       amountUsd: 60,
       acceptedAssets: ['BTC'],
-      enabledChains: ['bitcoin']
+      enabledChains: ['bitcoin'],
     },
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(created.statusCode, 201);
-  assert.equal(created.json.checkout.recipientByChain.bitcoin, '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw');
-  assert.equal(created.json.checkout.manualPayment.available, true);
+  assert.equal(created.statusCode, 201)
+  assert.equal(
+    created.json.checkout.recipientByChain.bitcoin,
+    '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw',
+  )
+  assert.equal(created.json.checkout.manualPayment.available, true)
 
   const manual = await invokeApi({
     method: 'GET',
     url: `/api/checkouts/${created.json.checkout.id}/manual-payment`,
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(manual.statusCode, 200);
-  assert.equal(manual.json.available, true);
-  assert.equal(manual.json.address, '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw');
-  assert.match(manual.json.paymentUri, /^bitcoin:/);
-});
+  assert.equal(manual.statusCode, 200)
+  assert.equal(manual.json.available, true)
+  assert.equal(manual.json.address, '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw')
+  assert.match(manual.json.paymentUri, /^bitcoin:/)
+})
 
 test('bitcoin status polling does not auto-confirm a checkout when using a reused static receiving address', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-bitcoin-static-status-'));
+  const dir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'charge-with-crypto-bitcoin-static-status-'),
+  )
   const config = {
     env: 'test',
     port: 0,
@@ -224,55 +312,96 @@ test('bitcoin status polling does not auto-confirm a checkout when using a reuse
     webhookSecretFallback: 'fallback',
     minConfirmations: 1,
     chains: {
-      bitcoin: { name: 'Bitcoin', network: 'mainnet', nativeAsset: 'BTC' }
+      bitcoin: { name: 'Bitcoin', network: 'mainnet', nativeAsset: 'BTC' },
     },
     assets: {
-      BTC: { symbol: 'BTC', decimals: 8, type: 'native' }
-    }
-  };
+      BTC: { symbol: 'BTC', decimals: 8, type: 'native' },
+    },
+  }
 
-  const store = new SqliteStore(dir);
-  ensureMerchantDefaults(store, config);
+  const store = new SqliteStore(dir)
+  ensureMerchantDefaults(store, config)
   store.update('merchants', 'merchant_default', {
     recipientAddresses: {
-      bitcoin: '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw'
+      bitcoin: '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw',
     },
     enabledChains: ['bitcoin'],
     manualPaymentEnabledChains: ['bitcoin'],
-    defaultAcceptedAssets: ['BTC']
-  });
+    defaultAcceptedAssets: ['BTC'],
+  })
 
-  const bitcoinService = new BitcoinManualPaymentService({ store, config });
+  const bitcoinService = new BitcoinManualPaymentService({ store, config })
   bitcoinService.client = {
-    getAddressTxs: async () => [{
-      txid: 'd3f6cc98aea396b5e80653bca2ba7435ee81d8b6d56b419d67982782e8c7c270',
-      status: { confirmed: true, block_height: 1 },
-      vout: [{ scriptpubkey_address: '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw', value: 100000 }]
-    }],
-    getTipHeight: async () => 100
-  };
+    getAddressTxs: async () => [
+      {
+        txid: 'd3f6cc98aea396b5e80653bca2ba7435ee81d8b6d56b419d67982782e8c7c270',
+        status: { confirmed: true, block_height: 1 },
+        vout: [
+          {
+            scriptpubkey_address: '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw',
+            value: 100000,
+          },
+        ],
+      },
+    ],
+    getTipHeight: async () => 100,
+  }
   const manualPaymentService = new CompositeManualPaymentService({
     evmService: {
       isConfigured: () => false,
-      status: () => ({ configured: false, sponsorAddress: '', derivationPath: '' }),
-      createCheckoutManualPayment: async () => ({ available: false, enabledChains: [], acceptedAssets: [] }),
+      status: () => ({
+        configured: false,
+        sponsorAddress: '',
+        derivationPath: '',
+      }),
+      createCheckoutManualPayment: async () => ({
+        available: false,
+        enabledChains: [],
+        acceptedAssets: [],
+      }),
       reconcileCheckout: async (checkout) => checkout,
-      getCheckoutDetails: async () => ({ available: false })
+      getCheckoutDetails: async () => ({ available: false }),
     },
-    bitcoinService
-  });
-  const providers = new ProviderRegistry();
+    bitcoinService,
+  })
+  const providers = new ProviderRegistry()
   providers.register('bitcoin', {
-    verifyPayment: async ({ recipientAddress }) => ({ ok: true, reason: 'confirmed', confirmations: 2, recipientAddress })
-  });
+    verifyPayment: async ({ recipientAddress }) => ({
+      ok: true,
+      reason: 'confirmed',
+      confirmations: 2,
+      recipientAddress,
+    }),
+  })
   const priceService = {
-    getAssetPrice: async () => ({ priceUsd: 60000, priceMicros: 60000000000, source: 'test', fetchedAt: new Date().toISOString() }),
-    quoteUsd: async () => ({ baseUnits: 100000n, decimalAmount: '0.001', priceUsd: 60000, priceMicros: 60000000000, source: 'test', fetchedAt: new Date().toISOString() })
-  };
+    getAssetPrice: async () => ({
+      priceUsd: 60000,
+      priceMicros: 60000000000,
+      source: 'test',
+      fetchedAt: new Date().toISOString(),
+    }),
+    quoteUsd: async () => ({
+      baseUnits: 100000n,
+      decimalAmount: '0.001',
+      priceUsd: 60000,
+      priceMicros: 60000000000,
+      source: 'test',
+      fetchedAt: new Date().toISOString(),
+    }),
+  }
   const balanceService = {
-    scanQuotes: async () => ({ 'bitcoin:BTC': { raw: '250000', display: '0.0025' } })
-  };
-  const ctx = { store, config, providers, priceService, balanceService, manualPaymentService };
+    scanQuotes: async () => ({
+      'bitcoin:BTC': { raw: '250000', display: '0.0025' },
+    }),
+  }
+  const ctx = {
+    store,
+    config,
+    providers,
+    priceService,
+    balanceService,
+    manualPaymentService,
+  }
 
   const created = await invokeApi({
     method: 'POST',
@@ -282,26 +411,28 @@ test('bitcoin status polling does not auto-confirm a checkout when using a reuse
       title: 'Bitcoin static reused address',
       amountUsd: 60,
       acceptedAssets: ['BTC'],
-      enabledChains: ['bitcoin']
+      enabledChains: ['bitcoin'],
     },
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(created.statusCode, 201);
+  assert.equal(created.statusCode, 201)
 
   const status = await invokeApi({
     method: 'GET',
     url: `/api/checkouts/${created.json.checkout.id}/status`,
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(status.statusCode, 200);
-  assert.equal(status.json.checkout.status, 'pending');
-  assert.equal((status.json.payments || []).length, 0);
-});
+  assert.equal(status.statusCode, 200)
+  assert.equal(status.json.checkout.status, 'pending')
+  assert.equal((status.json.payments || []).length, 0)
+})
 
 test('bitcoin submit rejects expired quotes instead of accepting a stale price', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-bitcoin-expired-submit-'));
+  const dir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'charge-with-crypto-bitcoin-expired-submit-'),
+  )
   const config = {
     env: 'test',
     port: 0,
@@ -316,46 +447,80 @@ test('bitcoin submit rejects expired quotes instead of accepting a stale price',
     webhookSecretFallback: 'fallback',
     minConfirmations: 1,
     chains: {
-      bitcoin: { name: 'Bitcoin', network: 'mainnet', nativeAsset: 'BTC' }
+      bitcoin: { name: 'Bitcoin', network: 'mainnet', nativeAsset: 'BTC' },
     },
     assets: {
-      BTC: { symbol: 'BTC', decimals: 8, type: 'native' }
-    }
-  };
+      BTC: { symbol: 'BTC', decimals: 8, type: 'native' },
+    },
+  }
 
-  const store = new SqliteStore(dir);
-  ensureMerchantDefaults(store, config);
+  const store = new SqliteStore(dir)
+  ensureMerchantDefaults(store, config)
   store.update('merchants', 'merchant_default', {
     recipientAddresses: {
-      bitcoin: '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw'
+      bitcoin: '3EGCcNYDHWC5SiBH2Xcy7mhZhEbRXuEMvw',
     },
     enabledChains: ['bitcoin'],
     manualPaymentEnabledChains: ['bitcoin'],
-    defaultAcceptedAssets: ['BTC']
-  });
+    defaultAcceptedAssets: ['BTC'],
+  })
 
   const manualPaymentService = new CompositeManualPaymentService({
     evmService: {
       isConfigured: () => false,
-      status: () => ({ configured: false, sponsorAddress: '', derivationPath: '' }),
-      createCheckoutManualPayment: async () => ({ available: false, enabledChains: [], acceptedAssets: [] }),
+      status: () => ({
+        configured: false,
+        sponsorAddress: '',
+        derivationPath: '',
+      }),
+      createCheckoutManualPayment: async () => ({
+        available: false,
+        enabledChains: [],
+        acceptedAssets: [],
+      }),
       reconcileCheckout: async (checkout) => checkout,
-      getCheckoutDetails: async () => ({ available: false })
+      getCheckoutDetails: async () => ({ available: false }),
     },
-    bitcoinService: new BitcoinManualPaymentService({ store, config })
-  });
-  const providers = new ProviderRegistry();
+    bitcoinService: new BitcoinManualPaymentService({ store, config }),
+  })
+  const providers = new ProviderRegistry()
   providers.register('bitcoin', {
-    verifyPayment: async ({ recipientAddress }) => ({ ok: false, reason: 'insufficient_confirmations', confirmations: 0, recipientAddress })
-  });
+    verifyPayment: async ({ recipientAddress }) => ({
+      ok: false,
+      reason: 'insufficient_confirmations',
+      confirmations: 0,
+      recipientAddress,
+    }),
+  })
   const priceService = {
-    getAssetPrice: async () => ({ priceUsd: 60000, priceMicros: 60000000000, source: 'test', fetchedAt: new Date().toISOString() }),
-    quoteUsd: async () => ({ baseUnits: 100000n, decimalAmount: '0.001', priceUsd: 60000, priceMicros: 60000000000, source: 'test', fetchedAt: new Date().toISOString() })
-  };
+    getAssetPrice: async () => ({
+      priceUsd: 60000,
+      priceMicros: 60000000000,
+      source: 'test',
+      fetchedAt: new Date().toISOString(),
+    }),
+    quoteUsd: async () => ({
+      baseUnits: 100000n,
+      decimalAmount: '0.001',
+      priceUsd: 60000,
+      priceMicros: 60000000000,
+      source: 'test',
+      fetchedAt: new Date().toISOString(),
+    }),
+  }
   const balanceService = {
-    scanQuotes: async () => ({ 'bitcoin:BTC': { raw: '250000', display: '0.0025' } })
-  };
-  const ctx = { store, config, providers, priceService, balanceService, manualPaymentService };
+    scanQuotes: async () => ({
+      'bitcoin:BTC': { raw: '250000', display: '0.0025' },
+    }),
+  }
+  const ctx = {
+    store,
+    config,
+    providers,
+    priceService,
+    balanceService,
+    manualPaymentService,
+  }
 
   const created = await invokeApi({
     method: 'POST',
@@ -365,13 +530,16 @@ test('bitcoin submit rejects expired quotes instead of accepting a stale price',
       title: 'Bitcoin expiring quote',
       amountUsd: 60,
       acceptedAssets: ['BTC'],
-      enabledChains: ['bitcoin']
+      enabledChains: ['bitcoin'],
     },
-    ctx
-  });
+    ctx,
+  })
 
-  const quote = created.json.quotes[0];
-  store.update('quotes', quote.id, { expiresAt: '2000-01-01T00:00:00.000Z', status: 'expired' });
+  const quote = created.json.quotes[0]
+  store.update('quotes', quote.id, {
+    expiresAt: '2000-01-01T00:00:00.000Z',
+    status: 'expired',
+  })
 
   const submitted = await invokeApi({
     method: 'POST',
@@ -380,11 +548,11 @@ test('bitcoin submit rejects expired quotes instead of accepting a stale price',
       txHash: `${'c'.repeat(64)}`,
       chain: 'bitcoin',
       asset: 'BTC',
-      quoteId: quote.id
+      quoteId: quote.id,
     },
-    ctx
-  });
+    ctx,
+  })
 
-  assert.equal(submitted.statusCode, 409);
-  assert.equal(submitted.json.error, 'payment_window_expired');
-});
+  assert.equal(submitted.statusCode, 409)
+  assert.equal(submitted.json.error, 'payment_window_expired')
+})
