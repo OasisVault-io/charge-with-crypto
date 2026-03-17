@@ -10,16 +10,16 @@ const { SqliteStore } = require('../app/lib/store/sqliteStore');
 test('recordConfirmedExternalPayment confirms checkout without waiting for webhook delivery', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-payment-service-'));
   const store = new SqliteStore(dir);
-  const webhookService = require('../app/lib/services/payments/webhookDelivery');
-  const paymentServicePath = require.resolve('../app/lib/services/payments/paymentService');
-  const originalDispatchWebhook = webhookService.dispatchWebhook;
+  const {
+    recordConfirmedExternalPayment,
+    resetDispatchWebhookImplementation,
+    setDispatchWebhookImplementation
+  } = require('../app/lib/services/payments/paymentService');
   let dispatchCount = 0;
-  webhookService.dispatchWebhook = () => {
+  setDispatchWebhookImplementation(() => {
     dispatchCount += 1;
     return sleep(250).then(() => ({ delivered: true }));
-  };
-  delete require.cache[paymentServicePath];
-  const { recordConfirmedExternalPayment } = require('../app/lib/services/payments/paymentService');
+  });
 
   try {
     const merchant = store.insert('merchants', {
@@ -66,13 +66,12 @@ test('recordConfirmedExternalPayment confirms checkout without waiting for webho
 
     assert.equal(payment.status, 'confirmed');
     assert.ok(elapsedMs < 200, `expected non-blocking webhook delivery, got ${elapsedMs}ms`);
-    assert.equal(dispatchCount, 1);
     const events = store.find('events', (event) => event.checkoutId === checkout.id && event.type === 'payment.confirmed');
     assert.equal(events.length, 1);
 
     await sleep(350);
+    assert.equal(dispatchCount, 1);
   } finally {
-    webhookService.dispatchWebhook = originalDispatchWebhook;
-    delete require.cache[paymentServicePath];
+    resetDispatchWebhookImplementation();
   }
 });

@@ -3,36 +3,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { Readable } = require('node:stream');
 const test = require('node:test');
 const { decodePaymentRequiredHeader, decodePaymentResponseHeader, encodePaymentSignatureHeader } = require('@x402/core/http');
-const { handleApi, ensureMerchantDefaults } = require('../app/lib/legacy/api');
 const { X402Service } = require('../app/lib/services/protocols/x402Service');
 const { SqliteStore } = require('../app/lib/store/sqliteStore');
-
-async function invokeApi({ method, url, body, ctx, headers = {} }) {
-  const payload = body ? JSON.stringify(body) : '';
-  const req = Readable.from(payload ? [Buffer.from(payload)] : []);
-  req.method = method;
-  req.url = url;
-  req.headers = headers;
-
-  let statusCode = 0;
-  let raw = '';
-  let responseHeaders = {};
-  const res = {
-    writeHead(code, nextHeaders = {}) {
-      statusCode = code;
-      responseHeaders = nextHeaders || {};
-    },
-    end(chunk) {
-      raw = chunk ? String(chunk) : '';
-    }
-  };
-
-  const handled = await handleApi(req, res, ctx);
-  return { handled, statusCode, headers: responseHeaders, json: raw ? JSON.parse(raw) : null };
-}
+const { invokeApi, ensureMerchantDefaults } = require('./helpers/apiHarness.ts');
 
 function testConfig(dir) {
   return {

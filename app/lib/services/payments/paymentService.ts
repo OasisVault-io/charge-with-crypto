@@ -6,6 +6,7 @@ import {
 	resolveServiceRepositories,
 	type ServiceRepositories,
 } from '../shared/repositories'
+import * as webhookDelivery from './webhookDelivery'
 import {
 	type AnyRecord,
 	type AppConfig,
@@ -15,7 +16,6 @@ import {
 	type StoreLike,
 	type VerificationResult,
 } from '../shared/types'
-import { dispatchWebhook } from './webhookDelivery'
 
 type ProviderRegistryLike = {
 	get(name: string): {
@@ -76,6 +76,18 @@ type RecordConfirmedExternalPaymentInput = {
 	recipientAddress: string
 	method?: string
 	verification?: AnyRecord
+}
+
+let dispatchWebhookImpl = webhookDelivery.dispatchWebhook
+
+function setDispatchWebhookImplementation(
+	dispatcher: typeof webhookDelivery.dispatchWebhook,
+) {
+	dispatchWebhookImpl = dispatcher
+}
+
+function resetDispatchWebhookImplementation() {
+	dispatchWebhookImpl = webhookDelivery.dispatchWebhook
 }
 
 function conflictingPaymentForTx({
@@ -169,7 +181,7 @@ async function emitPaymentConfirmed({
 
 	const merchant = repositories.merchants.get(String(checkout.merchantId || ''))
 	if (merchant) {
-		void dispatchWebhook({ repositories, config, merchant, event })
+		void dispatchWebhookImpl({ repositories, config, merchant, event })
 	}
 }
 
@@ -612,10 +624,12 @@ async function recordConfirmedExternalPayment({
 }
 
 export {
+	resetDispatchWebhookImplementation,
 	verifyPaymentAndRecord,
 	reconcilePendingCheckoutPayments,
 	recordManualDetectedPayment,
 	recordConfirmedExternalPayment,
+	setDispatchWebhookImplementation,
 }
 
 class PaymentService {

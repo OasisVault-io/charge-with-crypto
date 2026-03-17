@@ -12,8 +12,8 @@
     "manual:sweep": "node --import tsx scripts/manual-sweep.ts",
     "routes:rr7": "react-router routes --config vite.react-router.config.ts",
     "start": "react-router-serve ./build/server/index.js",
-    "test": "node --import tsx --test tests/**/*.test.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc -p tsconfig.rr7.json --noEmit",
     "typecheck:rr7": "tsc -p tsconfig.rr7.json --noEmit"
   },
   "dependencies": {

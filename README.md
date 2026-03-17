@@ -69,7 +69,6 @@ This runs the React Router v7 app on `http://127.0.0.1:4173`.
 ## Current structure
 
 - `app/`: React Router v7 routes, route modules, server-side services, backend engine, and RR7-owned styling
-- `src/`: legacy compatibility surface kept during consolidation
 
 ## Scope
 

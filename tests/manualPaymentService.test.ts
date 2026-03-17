@@ -1,19 +1,24 @@
 // @ts-nocheck
 const assert = require('node:assert/strict');
+const { HDKey } = require('viem/accounts');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { ManualPaymentService } = require('../app/lib/services/manual-payment/manualPaymentService');
 const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const { deriveEvmDepositWallet } = require('../app/lib/utils/viemEvm.js');
+
+const TEST_EVM_XPUB = HDKey.fromMasterSeed(Buffer.alloc(32, 7))
+  .derive("m/44'/60'/0'/0")
+  .publicExtendedKey;
 
 async function deriveExpectedAddress(index) {
-  const { HDNodeWallet } = require('ethers');
-  return HDNodeWallet.fromPhrase(
-    'test test test test test test test test test test test junk',
-    undefined,
-    "m/44'/60'/0'/0"
-  ).deriveChild(Number(index)).address;
+  const derived = await deriveEvmDepositWallet({
+    xpub: TEST_EVM_XPUB,
+    index: Number(index)
+  });
+  return derived.address;
 }
 
 function createConfig() {
@@ -38,16 +43,9 @@ function createConfig() {
 }
 
 function createXpubConfig() {
-  const mnemonic = 'test test test test test test test test test test test junk';
-  const { HDNodeWallet } = require('ethers');
-  const xpub = HDNodeWallet.fromPhrase(
-    mnemonic,
-    undefined,
-    "m/44'/60'/0'/0"
-  ).neuter().extendedKey;
   return {
     minConfirmations: 1,
-    manualPaymentXpub: xpub,
+    manualPaymentXpub: TEST_EVM_XPUB,
     manualPaymentMnemonic: '',
     manualPaymentSweepSponsorPrivateKey: '',
     chains: {

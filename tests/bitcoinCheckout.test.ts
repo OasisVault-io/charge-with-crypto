@@ -3,39 +3,20 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { Readable } = require('node:stream');
 const test = require('node:test');
 const { BIP32Factory } = require('bip32');
 const ecc = require('tiny-secp256k1');
-const { handleApi, ensureMerchantDefaults } = require('../app/lib/legacy/api');
 const { BitcoinAddressService } = require('../app/lib/services/chains/bitcoin/bitcoinAddressService');
 const { BitcoinManualPaymentService } = require('../app/lib/services/chains/bitcoin/bitcoinManualPaymentService');
 const { CompositeManualPaymentService } = require('../app/lib/services/manual-payment/compositeManualPaymentService');
 const { ProviderRegistry } = require('../app/lib/services/shared/provider');
 const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const { invokeApi, ensureMerchantDefaults } = require('./helpers/apiHarness.ts');
 
 const bip32 = BIP32Factory(ecc);
 
 function merchantXpub() {
   return bip32.fromSeed(Buffer.alloc(32, 9)).derivePath("m/84'/0'/0'").neutered().toBase58();
-}
-
-async function invokeApi({ method, url, body, ctx, headers = {} }) {
-  const payload = body ? JSON.stringify(body) : '';
-  const req = Readable.from(payload ? [Buffer.from(payload)] : []);
-  req.method = method;
-  req.url = url;
-  req.headers = headers;
-
-  let statusCode = 0;
-  let raw = '';
-  const res = {
-    writeHead(code) { statusCode = code; },
-    end(chunk) { raw = chunk ? String(chunk) : ''; }
-  };
-
-  const handled = await handleApi(req, res, ctx);
-  return { handled, statusCode, json: raw ? JSON.parse(raw) : null };
 }
 
 test('bitcoin checkout allocates a unique settlement address and exposes manual BTC payment details', async () => {

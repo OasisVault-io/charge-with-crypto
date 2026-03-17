@@ -3,29 +3,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { Readable } = require('node:stream');
 const test = require('node:test');
-const { handleApi, ensureMerchantDefaults } = require('../app/lib/legacy/api');
 const { ProviderRegistry } = require('../app/lib/services/shared/provider');
 const { SqliteStore } = require('../app/lib/store/sqliteStore');
-
-async function invokeApi({ method, url, body, ctx, headers = {} }) {
-  const payload = body ? JSON.stringify(body) : '';
-  const req = Readable.from(payload ? [Buffer.from(payload)] : []);
-  req.method = method;
-  req.url = url;
-  req.headers = headers;
-
-  let statusCode = 0;
-  let raw = '';
-  const res = {
-    writeHead(code) { statusCode = code; },
-    end(chunk) { raw = chunk ? String(chunk) : ''; }
-  };
-
-  const handled = await handleApi(req, res, ctx);
-  return { handled, statusCode, json: raw ? JSON.parse(raw) : null };
-}
+const { invokeApi, ensureMerchantDefaults } = require('./helpers/apiHarness.ts');
 
 test('product endpoints create stable product metadata and hosted checkouts from one merchant product', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-api-products-'));
