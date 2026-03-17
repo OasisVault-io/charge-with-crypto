@@ -1,5 +1,5 @@
-import { formatDate, formatUsd } from './dashboard.shared'
 import { useDashboardPageContext } from './context/DashboardPageContext'
+import { formatDate, formatUsd } from './dashboard.shared'
 
 export function DashboardActivitySection() {
   const { activeSection, dashboardData } = useDashboardPageContext()

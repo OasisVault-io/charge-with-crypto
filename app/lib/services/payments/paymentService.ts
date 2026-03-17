@@ -6,7 +6,6 @@ import {
 	resolveServiceRepositories,
 	type ServiceRepositories,
 } from '../shared/repositories'
-import * as webhookDelivery from './webhookDelivery'
 import {
 	type AnyRecord,
 	type AppConfig,
@@ -16,6 +15,7 @@ import {
 	type StoreLike,
 	type VerificationResult,
 } from '../shared/types'
+import * as webhookDelivery from './webhookDelivery'
 
 type ProviderRegistryLike = {
 	get(name: string): {

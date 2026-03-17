@@ -1,17 +1,17 @@
 // @ts-nocheck
 import {
-  request,
-  AddressPurpose,
-  DefaultAdaptersInfo,
-  setDefaultProvider,
-  removeDefaultProvider
-} from 'sats-connect';
+	request,
+	AddressPurpose,
+	DefaultAdaptersInfo,
+	setDefaultProvider,
+	removeDefaultProvider,
+} from 'sats-connect'
 
-window.ChargeWithCryptoVendors = window.ChargeWithCryptoVendors || {};
+window.ChargeWithCryptoVendors = window.ChargeWithCryptoVendors || {}
 window.ChargeWithCryptoVendors.xverse = {
-  request,
-  AddressPurpose,
-  DefaultAdaptersInfo,
-  setDefaultProvider,
-  removeDefaultProvider
-};
+	request,
+	AddressPurpose,
+	DefaultAdaptersInfo,
+	setDefaultProvider,
+	removeDefaultProvider,
+}

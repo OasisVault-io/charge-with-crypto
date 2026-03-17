@@ -7,7 +7,7 @@ import {
 	deriveEvmDepositWallet,
 	encodeErc20TransferData,
 	sponsorAddressForPrivateKey,
-} from '../../utils/viemEvm.js'
+} from '../../utils/viemEvm'
 import { requestJson } from '../merchant/merchantWebhookClient'
 import { recordManualDetectedPayment } from '../payments/paymentService'
 import { getActiveQuotesForCheckout } from '../payments/quoteService'

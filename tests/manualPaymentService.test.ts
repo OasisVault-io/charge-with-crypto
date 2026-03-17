@@ -1,10 +1,10 @@
 // @ts-nocheck
 const assert = require('node:assert/strict');
-const { HDKey } = require('viem/accounts');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
+const { HDKey } = require('viem/accounts');
 const { ManualPaymentService } = require('../app/lib/services/manual-payment/manualPaymentService');
 const { SqliteStore } = require('../app/lib/store/sqliteStore');
 const { deriveEvmDepositWallet } = require('../app/lib/utils/viemEvm.js');

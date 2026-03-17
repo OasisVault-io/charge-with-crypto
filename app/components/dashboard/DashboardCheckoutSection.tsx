@@ -1,3 +1,4 @@
+import { useDashboardPageContext } from './context/DashboardPageContext'
 import {
   assetRail,
   chainLabel,
@@ -6,7 +7,6 @@ import {
   normalizePaymentRail,
   railLabel,
 } from './dashboard.shared'
-import { useDashboardPageContext } from './context/DashboardPageContext'
 
 const toggleStringValue = (
   values: string[],

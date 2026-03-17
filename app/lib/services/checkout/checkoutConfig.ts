@@ -9,17 +9,19 @@ import { DEFAULT_ACCEPTED_ASSETS, DEMO_MERCHANT_ID } from '../merchant/merchantD
 import { type AnyRecord, type AppConfig, type MerchantLike } from '../shared/types'
 
 const CHECKOUT_TEMPLATES = ['neutral', 'oasis']
-const PAYMENT_RAILS = ['evm', 'bitcoin']
+const PAYMENT_RAILS = ['evm', 'bitcoin'] as const
 
-function uniq(values) {
-	return [...new Set((values || []).filter(Boolean))]
+type AcceptedAssetsMerchant = Partial<MerchantLike>
+
+function uniq<T>(values: T[] | null | undefined): T[] {
+	return [...new Set((values || []).filter(Boolean))] as T[]
 }
 
-function chainRail(chain) {
+function chainRail(chain: string): (typeof PAYMENT_RAILS)[number] {
 	return chain === 'bitcoin' ? 'bitcoin' : 'evm'
 }
 
-function assetRail(asset) {
+function assetRail(asset: string): (typeof PAYMENT_RAILS)[number] {
 	return asset === 'BTC' ? 'bitcoin' : 'evm'
 }
 
@@ -41,14 +43,22 @@ function isAssetSupportedOnChain(config, chain, asset) {
 	return Boolean(assetConfig.addresses?.[chain])
 }
 
-function normalizeRequestedChains(value, config, field = 'enabledChains') {
+function normalizeRequestedChains(
+	value: unknown,
+	config: AppConfig,
+	field = 'enabledChains',
+): string[] {
 	const requested = Array.isArray(value) ? value : []
 	return requested.map((chain) =>
 		requireEnum(chain, Object.keys(config.chains), field),
 	)
 }
 
-function normalizeRequestedAssets(value, config, field = 'acceptedAssets') {
+function normalizeRequestedAssets(
+	value: unknown,
+	config: AppConfig,
+	field = 'acceptedAssets',
+): string[] {
 	const requested = Array.isArray(value) ? value : []
 	return requested.map((asset) =>
 		requireEnum(asset, Object.keys(config.assets), field),
@@ -60,7 +70,15 @@ function normalizeUrlValue(value, field, options) {
 	return requireUrl(value, field, options)
 }
 
-function derivePaymentRail({ body, fallback = 'evm', config }) {
+function derivePaymentRail({
+	body,
+	fallback = 'evm',
+	config,
+}: {
+	body: AnyRecord
+	fallback?: string
+	config: AppConfig
+}): string {
 	const explicit = requireOptionalString(
 		body.paymentRail || body.rail || '',
 		'paymentRail',
@@ -200,7 +218,15 @@ function deriveCheckoutAcceptedAssets({
 	return unique
 }
 
-function deriveEnabledChains({ body, merchant, config }) {
+function deriveEnabledChains({
+	body,
+	merchant,
+	config,
+}: {
+	body: AnyRecord
+	merchant: MerchantLike
+	config: AppConfig
+}): string[] {
 	const requested =
 		Array.isArray(body.enabledChains) && body.enabledChains.length
 			? body.enabledChains
@@ -226,7 +252,17 @@ function deriveEnabledChains({ body, merchant, config }) {
 	return unique
 }
 
-function deriveAcceptedAssets({ body, merchant, enabledChains, config }) {
+function deriveAcceptedAssets({
+	body,
+	merchant,
+	enabledChains,
+	config,
+}: {
+	body: AnyRecord
+	merchant: AcceptedAssetsMerchant
+	enabledChains: string[]
+	config: AppConfig
+}): string[] {
 	const requested =
 		Array.isArray(body.acceptedAssets) && body.acceptedAssets.length
 			? body.acceptedAssets
@@ -280,8 +316,8 @@ function normalizePlans(plans, config) {
 			fallback: 'evm',
 			config,
 		})
-		const enabledChains = [
-			...new Set(
+		const enabledChains: string[] = [
+			...new Set<string>(
 				(Array.isArray(plan.enabledChains) ? plan.enabledChains : []).map(
 					(chain) =>
 						requireEnum(
@@ -298,7 +334,7 @@ function normalizePlans(plans, config) {
 		if (enabledChains.some((chain) => chainRail(chain) !== paymentRail)) {
 			throw new Error(`invalid plans[${index}].enabledChains for paymentRail`)
 		}
-		const acceptedAssets = deriveAcceptedAssets({
+		const acceptedAssets: string[] = deriveAcceptedAssets({
 			body: {
 				acceptedAssets: plan.acceptedAssets ||
 					plan.assets || [plan.asset || 'USDC'],

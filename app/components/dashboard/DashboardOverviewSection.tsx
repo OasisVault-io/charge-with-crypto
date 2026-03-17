@@ -1,5 +1,5 @@
-import { chainLabel, formatUsd } from './dashboard.shared'
 import { useDashboardPageContext } from './context/DashboardPageContext'
+import { chainLabel, formatUsd } from './dashboard.shared'
 
 export function DashboardOverviewSection() {
   const {

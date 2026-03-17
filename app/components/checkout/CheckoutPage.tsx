@@ -18,7 +18,9 @@ import {
   safeLogoSrc,
 } from './checkout.shared'
 import {
+  type CheckoutConfig,
   type CheckoutManualRoute,
+  type CheckoutPayment,
   type CheckoutQuote,
   type CheckoutRail,
   type CheckoutViewState,
@@ -40,6 +42,11 @@ type CheckoutPageProps = {
   initialData: CheckoutViewState
   templateParam?: string
 }
+
+const EMPTY_QUOTES: CheckoutQuote[] = []
+const EMPTY_PAYMENTS: CheckoutPayment[] = []
+const EMPTY_CONFIG: CheckoutConfig = {}
+const EMPTY_MANUAL_ROUTES: CheckoutManualRoute[] = []
 
 export function CheckoutPage({
   checkoutId,
@@ -74,9 +81,9 @@ export function CheckoutPage({
   } = state
 
   const checkout = viewState?.checkout
-  const quotes = viewState?.quotes || []
-  const payments = viewState?.payments || []
-  const config = viewState?.config || {}
+  const quotes = viewState?.quotes ?? EMPTY_QUOTES
+  const payments = viewState?.payments ?? EMPTY_PAYMENTS
+  const config = viewState?.config ?? EMPTY_CONFIG
   const paymentRail: CheckoutRail =
     checkout?.paymentRail === 'bitcoin'
       ? 'bitcoin'
@@ -93,9 +100,10 @@ export function CheckoutPage({
       ? 'checkout-template-neutral'
       : 'checkout-template-oasis'
   }`
-  const manualRoutes = (viewState?.manualDetails?.routes ||
-    checkout?.manualPayment?.routes ||
-    []) as CheckoutManualRoute[]
+  const manualRoutes =
+    viewState?.manualDetails?.routes ??
+    checkout?.manualPayment?.routes ??
+    EMPTY_MANUAL_ROUTES
   const selectedManualRoute =
     manualRoutes.find((route) => route.key === manualSelectedRouteKey) ||
     manualRoutes.find(
@@ -120,7 +128,7 @@ export function CheckoutPage({
       tick(Date.now())
     }, 1000)
     return () => window.clearInterval(interval)
-  }, [])
+  }, [tick])
 
   const walletCompatibleQuotes = useMemo<CheckoutQuote[]>(() => {
     if (!walletSession) return []

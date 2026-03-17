@@ -1,18 +1,16 @@
-// @ts-nocheck
-function nowIso() {
-  return new Date().toISOString();
+function nowIso(): string {
+	return new Date().toISOString()
 }
 
-function addSeconds(isoOrDate, seconds) {
-  const d = isoOrDate instanceof Date ? new Date(isoOrDate) : new Date(isoOrDate);
-  d.setSeconds(d.getSeconds() + seconds);
-  return d.toISOString();
+function addSeconds(isoOrDate: string | Date, seconds: number): string {
+	const d =
+		isoOrDate instanceof Date ? new Date(isoOrDate) : new Date(isoOrDate)
+	d.setSeconds(d.getSeconds() + seconds)
+	return d.toISOString()
 }
 
-function isExpired(expiresAt, now = new Date()) {
-  return new Date(expiresAt).getTime() <= now.getTime();
+function isExpired(expiresAt: string | Date, now = new Date()): boolean {
+	return new Date(expiresAt).getTime() <= now.getTime()
 }
-
-module.exports = { nowIso, addSeconds, isExpired };
 
 export { addSeconds, isExpired, nowIso }

@@ -13,7 +13,9 @@ export async function action({
 	if (!id) return apiError('checkout not found', 404)
 
 	try {
-		return json(await getAppContext().checkoutService.submitCheckoutTx(request, id))
+		return json(
+			await getAppContext().checkoutService.submitCheckoutTx(request, id),
+		)
 	} catch (error) {
 		return apiErrorResponse(error, {
 			defaultCode: 'invalid_request',

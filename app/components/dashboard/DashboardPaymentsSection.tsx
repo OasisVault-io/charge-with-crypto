@@ -1,3 +1,4 @@
+import { useDashboardPageContext } from './context/DashboardPageContext'
 import {
   chainLabel,
   explorerTx,
@@ -5,7 +6,6 @@ import {
   formatUsd,
   paymentTone,
 } from './dashboard.shared'
-import { useDashboardPageContext } from './context/DashboardPageContext'
 
 export function DashboardPaymentsSection() {
   const {

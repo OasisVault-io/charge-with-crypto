@@ -12,6 +12,7 @@ import {
   type DashboardChecklistItem,
   type DashboardConfig,
   type DashboardData,
+  type DashboardMerchant,
 } from './dashboard.types'
 import { DashboardActivitySection } from './DashboardActivitySection'
 import { DashboardAuthGate } from './DashboardAuthGate'
@@ -31,6 +32,8 @@ type DashboardPageProps = {
   appConfig: DashboardConfig
   initialData: DashboardData
 }
+
+const EMPTY_MERCHANT: DashboardMerchant = {}
 
 export function DashboardPage({
   merchantId,
@@ -158,7 +161,7 @@ export function DashboardPage({
     setDashboardToken,
   ])
 
-  const merchant = dashboardData?.merchant || {}
+  const merchant = dashboardData?.merchant ?? EMPTY_MERCHANT
   const editingEnabled =
     dashboardData?.authenticated || !appConfig?.dashboardAuthConfigured
   const confirmedPayments = filteredPayments.filter(
