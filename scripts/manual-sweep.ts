@@ -1,7 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline/promises'
-import { mnemonicToSeedSync } from '@scure/bip39'
 import Database from 'better-sqlite3'
 import {
   createPublicClient,
@@ -12,7 +11,7 @@ import {
   getAddress,
   http,
 } from 'viem'
-import { privateKeyToAccount, HDKey } from 'viem/accounts'
+import { mnemonicToAccount, privateKeyToAccount } from 'viem/accounts'
 import { mainnet, base } from 'viem/chains'
 type Args = Record<string, string | boolean>
 type StoredCheckout = {
@@ -257,13 +256,15 @@ async function deriveChildWallet(
   derivationPath: string,
   index: number,
 ) {
-  const root = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic.trim()))
-  const child = root.derive(`${derivationPath}/${index}`)
-  if (!child?.privateKey)
-    fail(`Failed to derive private key for index ${index}.`)
+  const hdPath = `${derivationPath}/${index}` as `m/44'/60'/${string}`
+  const account = mnemonicToAccount(mnemonic.trim(), {
+    path: hdPath,
+  })
+  const hdKey = account.getHdKey()
+  const privateKeyBytes = hdKey.privateKey
+  if (!privateKeyBytes) fail(`Failed to derive private key for index ${index}.`)
   const privateKey =
-    `0x${Buffer.from(child.privateKey).toString('hex')}` as `0x${string}`
-  const account = privateKeyToAccount(privateKey)
+    `0x${Buffer.from(privateKeyBytes).toString('hex')}` as `0x${string}`
   return { account, privateKey }
 }
 

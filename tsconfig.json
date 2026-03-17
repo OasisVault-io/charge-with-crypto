@@ -7,7 +7,7 @@
     "tests/**/*.ts",
     "reset.d.ts",
     "react-router.config.ts",
-    "vite.react-router.config.ts"
+    "vite.react-router.config.mts"
   ],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],

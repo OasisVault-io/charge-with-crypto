@@ -1,5 +1,4 @@
 import { type secp256k1 as Secp256k1 } from '@noble/curves/secp256k1'
-import { mnemonicToSeedSync } from '@scure/bip39'
 import { type Address, type Chain, type Hex } from 'viem'
 import type * as Viem from 'viem'
 import type * as ViemAccounts from 'viem/accounts'
@@ -18,6 +17,7 @@ type ViemModules = {
   encodeFunctionData: typeof Viem.encodeFunctionData
   erc20Abi: typeof Viem.erc20Abi
   http: typeof Viem.http
+  mnemonicToAccount: typeof ViemAccounts.mnemonicToAccount
   toHex: typeof Viem.toHex
   HDKey: typeof ViemAccounts.HDKey
   privateKeyToAccount: typeof ViemAccounts.privateKeyToAccount
@@ -60,10 +60,6 @@ type Erc20TransferInput = {
 
 let viemModulesPromise: Promise<ViemModules> | null = null
 
-function mnemonicToSeedBytes(mnemonic: string): Uint8Array {
-  return mnemonicToSeedSync(mnemonic)
-}
-
 function normalizePrivateKey(value: unknown): Hex {
   const text = String(value || '').trim()
   if (!text) throw new Error('invalid_private_key')
@@ -103,6 +99,7 @@ async function loadViemModules(): Promise<ViemModules> {
       encodeFunctionData: viem.encodeFunctionData,
       erc20Abi: viem.erc20Abi,
       http: viem.http,
+      mnemonicToAccount: accounts.mnemonicToAccount,
       toHex: viem.toHex,
       HDKey: accounts.HDKey,
       privateKeyToAccount: accounts.privateKeyToAccount,
@@ -248,7 +245,7 @@ async function deriveEvmDepositWallet({
   index = 0,
 }: DeriveWalletInput = {}): Promise<DerivedWalletLike> {
   const numericIndex = Number(index)
-  const { HDKey, privateKeyToAccount, publicKeyToAddress, secp256k1, toHex } =
+  const { HDKey, mnemonicToAccount, publicKeyToAddress, secp256k1, toHex } =
     await loadViemModules()
 
   if (xpub) {
@@ -272,14 +269,15 @@ async function deriveEvmDepositWallet({
     }
   }
 
-  const hdKey = HDKey.fromMasterSeed(
-    mnemonicToSeedBytes(String(mnemonic).trim()),
-  )
-  const child = hdKey.derive(`${derivationPath}/${numericIndex}`)
-  if (!child?.privateKey)
+  const hdPath = `${derivationPath}/${numericIndex}` as `m/44'/60'/${string}`
+  const account = mnemonicToAccount(String(mnemonic).trim(), {
+    path: hdPath,
+  })
+  const hdKey = account.getHdKey()
+  const privateKeyBytes = hdKey.privateKey
+  if (!privateKeyBytes)
     throw new Error(`failed_to_derive_private_key_${numericIndex}`)
-  const privateKey = asHex(`0x${Buffer.from(child.privateKey).toString('hex')}`)
-  const account = privateKeyToAccount(privateKey)
+  const privateKey = asHex(`0x${Buffer.from(privateKeyBytes).toString('hex')}`)
   return {
     address: account.address,
     privateKey,

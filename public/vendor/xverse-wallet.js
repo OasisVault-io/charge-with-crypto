@@ -31,9 +31,9 @@
   ));
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
-  // node_modules/base64-js/index.js
+  // node_modules/.pnpm/base64-js@1.5.1/node_modules/base64-js/index.js
   var require_base64_js = __commonJS({
-    "node_modules/base64-js/index.js"(exports) {
+    "node_modules/.pnpm/base64-js@1.5.1/node_modules/base64-js/index.js"(exports) {
       "use strict";
       exports.byteLength = byteLength;
       exports.toByteArray = toByteArray;
@@ -132,9 +132,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/base64Url.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/base64Url.js
   var require_base64Url = __commonJS({
-    "node_modules/jsontokens/lib/base64Url.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/base64Url.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.decode = exports.encode = exports.unescape = exports.escape = exports.pad = void 0;
@@ -162,9 +162,9 @@
     }
   });
 
-  // node_modules/@noble/hashes/_assert.js
+  // node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/_assert.js
   var require_assert = __commonJS({
-    "node_modules/@noble/hashes/_assert.js"(exports) {
+    "node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/_assert.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.output = exports.exists = exports.hash = exports.bytes = exports.bool = exports.number = void 0;
@@ -212,9 +212,9 @@
     }
   });
 
-  // node_modules/@noble/hashes/crypto.js
+  // node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/crypto.js
   var require_crypto = __commonJS({
-    "node_modules/@noble/hashes/crypto.js"(exports) {
+    "node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/crypto.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.crypto = void 0;
@@ -222,9 +222,9 @@
     }
   });
 
-  // node_modules/@noble/hashes/utils.js
+  // node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/utils.js
   var require_utils = __commonJS({
-    "node_modules/@noble/hashes/utils.js"(exports) {
+    "node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/utils.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.randomBytes = exports.wrapXOFConstructorWithOpts = exports.wrapConstructorWithOpts = exports.wrapConstructor = exports.checkOpts = exports.Hash = exports.concatBytes = exports.toBytes = exports.utf8ToBytes = exports.asyncLoop = exports.nextTick = exports.hexToBytes = exports.bytesToHex = exports.isLE = exports.rotr = exports.createView = exports.u32 = exports.u8 = void 0;
@@ -363,9 +363,9 @@
     }
   });
 
-  // node_modules/@noble/hashes/hmac.js
+  // node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/hmac.js
   var require_hmac = __commonJS({
-    "node_modules/@noble/hashes/hmac.js"(exports) {
+    "node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/hmac.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.hmac = exports.HMAC = void 0;
@@ -439,9 +439,9 @@
     }
   });
 
-  // node_modules/@noble/hashes/_sha2.js
+  // node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/_sha2.js
   var require_sha2 = __commonJS({
-    "node_modules/@noble/hashes/_sha2.js"(exports) {
+    "node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/_sha2.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.SHA2 = void 0;
@@ -549,9 +549,9 @@
     }
   });
 
-  // node_modules/@noble/hashes/sha256.js
+  // node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/sha256.js
   var require_sha256 = __commonJS({
-    "node_modules/@noble/hashes/sha256.js"(exports) {
+    "node_modules/.pnpm/@noble+hashes@1.3.2/node_modules/@noble/hashes/sha256.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.sha224 = exports.sha256 = void 0;
@@ -731,9 +731,9 @@
     }
   });
 
-  // node_modules/@noble/secp256k1/lib/index.js
+  // node_modules/.pnpm/@noble+secp256k1@1.7.2/node_modules/@noble/secp256k1/lib/index.js
   var require_lib = __commonJS({
-    "node_modules/@noble/secp256k1/lib/index.js"(exports) {
+    "node_modules/.pnpm/@noble+secp256k1@1.7.2/node_modules/@noble/secp256k1/lib/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.utils = exports.schnorr = exports.verify = exports.signSync = exports.sign = exports.getSharedSecret = exports.recoverPublicKey = exports.getPublicKey = exports.hexToBytes = exports.bytesToHex = exports.Signature = exports.Point = exports.CURVE = void 0;
@@ -1963,9 +1963,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/ecdsaSigFormatter.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/ecdsaSigFormatter.js
   var require_ecdsaSigFormatter = __commonJS({
-    "node_modules/jsontokens/lib/ecdsaSigFormatter.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/ecdsaSigFormatter.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.joseToDer = exports.derToJose = void 0;
@@ -2116,9 +2116,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/errors.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/errors.js
   var require_errors = __commonJS({
-    "node_modules/jsontokens/lib/errors.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/errors.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.InvalidTokenError = exports.MissingParametersError = void 0;
@@ -2141,9 +2141,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/cryptoClients/secp256k1.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/cryptoClients/secp256k1.js
   var require_secp256k1 = __commonJS({
-    "node_modules/jsontokens/lib/cryptoClients/secp256k1.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/cryptoClients/secp256k1.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.SECP256K1Client = void 0;
@@ -2197,9 +2197,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/cryptoClients/index.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/cryptoClients/index.js
   var require_cryptoClients = __commonJS({
-    "node_modules/jsontokens/lib/cryptoClients/index.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/cryptoClients/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.cryptoClients = exports.SECP256K1Client = void 0;
@@ -2214,9 +2214,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/cryptoClients/sha256.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/cryptoClients/sha256.js
   var require_sha2562 = __commonJS({
-    "node_modules/jsontokens/lib/cryptoClients/sha256.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/cryptoClients/sha256.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -2278,9 +2278,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/signer.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/signer.js
   var require_signer = __commonJS({
-    "node_modules/jsontokens/lib/signer.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/signer.js"(exports) {
       "use strict";
       var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
         function adopt(value) {
@@ -2381,9 +2381,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/verifier.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/verifier.js
   var require_verifier = __commonJS({
-    "node_modules/jsontokens/lib/verifier.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/verifier.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.TokenVerifier = void 0;
@@ -2464,9 +2464,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/decode.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/decode.js
   var require_decode = __commonJS({
-    "node_modules/jsontokens/lib/decode.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/decode.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.decodeToken = void 0;
@@ -2506,9 +2506,9 @@
     }
   });
 
-  // node_modules/jsontokens/lib/index.js
+  // node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/index.js
   var require_lib2 = __commonJS({
-    "node_modules/jsontokens/lib/index.js"(exports) {
+    "node_modules/.pnpm/jsontokens@4.0.1/node_modules/jsontokens/lib/index.js"(exports) {
       "use strict";
       var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m2, k, k2) {
         if (k2 === void 0) k2 = k;
@@ -2535,9 +2535,9 @@
     }
   });
 
-  // node_modules/bech32/dist/index.js
+  // node_modules/.pnpm/bech32@2.0.0/node_modules/bech32/dist/index.js
   var require_dist = __commonJS({
-    "node_modules/bech32/dist/index.js"(exports) {
+    "node_modules/.pnpm/bech32@2.0.0/node_modules/bech32/dist/index.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       exports.bech32m = exports.bech32 = void 0;
@@ -2701,9 +2701,9 @@
     }
   });
 
-  // node_modules/ieee754/index.js
+  // node_modules/.pnpm/ieee754@1.2.1/node_modules/ieee754/index.js
   var require_ieee754 = __commonJS({
-    "node_modules/ieee754/index.js"(exports) {
+    "node_modules/.pnpm/ieee754@1.2.1/node_modules/ieee754/index.js"(exports) {
       exports.read = function(buffer, offset, isLE, mLen, nBytes) {
         var e, m2;
         var eLen = nBytes * 8 - mLen - 1;
@@ -2784,9 +2784,9 @@
     }
   });
 
-  // node_modules/buffer/index.js
+  // node_modules/.pnpm/buffer@6.0.3/node_modules/buffer/index.js
   var require_buffer = __commonJS({
-    "node_modules/buffer/index.js"(exports) {
+    "node_modules/.pnpm/buffer@6.0.3/node_modules/buffer/index.js"(exports) {
       "use strict";
       var base64 = require_base64_js();
       var ieee754 = require_ieee754();
@@ -4376,9 +4376,9 @@
     }
   });
 
-  // node_modules/bowser/es5.js
+  // node_modules/.pnpm/bowser@2.14.1/node_modules/bowser/es5.js
   var require_es5 = __commonJS({
-    "node_modules/bowser/es5.js"(exports, module) {
+    "node_modules/.pnpm/bowser@2.14.1/node_modules/bowser/es5.js"(exports, module) {
       !(function(e, t) {
         "object" == typeof exports && "object" == typeof module ? module.exports = t() : "function" == typeof define && define.amd ? define([], t) : "object" == typeof exports ? exports.bowser = t() : e.bowser = t();
       })(exports, (function() {
@@ -5192,7 +5192,7 @@
     }
   });
 
-  // node_modules/sats-connect/node_modules/valibot/dist/index.js
+  // node_modules/.pnpm/valibot@1.1.0_typescript@5.9.3/node_modules/valibot/dist/index.js
   var store;
   // @__NO_SIDE_EFFECTS__
   function getGlobalConfig(config2) {
@@ -6158,17 +6158,17 @@
     return schema.wrapped;
   }
 
-  // node_modules/sats-connect/node_modules/@sats-connect/core/dist/index.mjs
+  // node_modules/.pnpm/@sats-connect+core@0.10.0_valibot@1.1.0_typescript@5.9.3_/node_modules/@sats-connect/core/dist/index.mjs
   var import_jsontokens = __toESM(require_lib2(), 1);
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/bind.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/bind.js
   function bind(fn2, thisArg) {
     return function wrap() {
       return fn2.apply(thisArg, arguments);
     };
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/utils.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/utils.js
   var { toString } = Object.prototype;
   var { getPrototypeOf } = Object;
   var { iterator, toStringTag } = Symbol;
@@ -6555,7 +6555,7 @@
     isIterable
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/AxiosError.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/AxiosError.js
   function AxiosError(message, code, config, request2, response) {
     Error.call(this);
     if (Error.captureStackTrace) {
@@ -6634,10 +6634,10 @@
   };
   var AxiosError_default = AxiosError;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/null.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/null.js
   var null_default = null;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/toFormData.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/toFormData.js
   function isVisitable(thing) {
     return utils_default.isPlainObject(thing) || utils_default.isArray(thing);
   }
@@ -6752,7 +6752,7 @@
   }
   var toFormData_default = toFormData;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/AxiosURLSearchParams.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/AxiosURLSearchParams.js
   function encode(str) {
     const charMap = {
       "!": "%21",
@@ -6785,7 +6785,7 @@
   };
   var AxiosURLSearchParams_default = AxiosURLSearchParams;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/buildURL.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/buildURL.js
   function encode2(val) {
     return encodeURIComponent(val).replace(/%3A/gi, ":").replace(/%24/g, "$").replace(/%2C/gi, ",").replace(/%20/g, "+");
   }
@@ -6816,7 +6816,7 @@
     return url;
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/InterceptorManager.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/InterceptorManager.js
   var InterceptorManager = class {
     constructor() {
       this.handlers = [];
@@ -6880,23 +6880,23 @@
   };
   var InterceptorManager_default = InterceptorManager;
 
-  // node_modules/sats-connect/node_modules/axios/lib/defaults/transitional.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/defaults/transitional.js
   var transitional_default = {
     silentJSONParsing: true,
     forcedJSONParsing: true,
     clarifyTimeoutError: false
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/platform/browser/classes/URLSearchParams.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/platform/browser/classes/URLSearchParams.js
   var URLSearchParams_default = typeof URLSearchParams !== "undefined" ? URLSearchParams : AxiosURLSearchParams_default;
 
-  // node_modules/sats-connect/node_modules/axios/lib/platform/browser/classes/FormData.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/platform/browser/classes/FormData.js
   var FormData_default = typeof FormData !== "undefined" ? FormData : null;
 
-  // node_modules/sats-connect/node_modules/axios/lib/platform/browser/classes/Blob.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/platform/browser/classes/Blob.js
   var Blob_default = typeof Blob !== "undefined" ? Blob : null;
 
-  // node_modules/sats-connect/node_modules/axios/lib/platform/browser/index.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/platform/browser/index.js
   var browser_default = {
     isBrowser: true,
     classes: {
@@ -6907,7 +6907,7 @@
     protocols: ["http", "https", "file", "blob", "url", "data"]
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/platform/common/utils.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/platform/common/utils.js
   var utils_exports = {};
   __export(utils_exports, {
     hasBrowserEnv: () => hasBrowserEnv,
@@ -6925,13 +6925,13 @@
   })();
   var origin = hasBrowserEnv && window.location.href || "http://localhost";
 
-  // node_modules/sats-connect/node_modules/axios/lib/platform/index.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/platform/index.js
   var platform_default = {
     ...utils_exports,
     ...browser_default
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/toURLEncodedForm.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/toURLEncodedForm.js
   function toURLEncodedForm(data, options) {
     return toFormData_default(data, new platform_default.classes.URLSearchParams(), {
       visitor: function(value, key, path, helpers) {
@@ -6945,7 +6945,7 @@
     });
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/formDataToJSON.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/formDataToJSON.js
   function parsePropPath(name) {
     return utils_default.matchAll(/\w+|\[(\w*)]/g, name).map((match) => {
       return match[0] === "[]" ? "" : match[1] || match[0];
@@ -6998,7 +6998,7 @@
   }
   var formDataToJSON_default = formDataToJSON;
 
-  // node_modules/sats-connect/node_modules/axios/lib/defaults/index.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/defaults/index.js
   function stringifySafely(rawValue, parser, encoder) {
     if (utils_default.isString(rawValue)) {
       try {
@@ -7107,7 +7107,7 @@
   });
   var defaults_default = defaults;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/parseHeaders.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/parseHeaders.js
   var ignoreDuplicateOf = utils_default.toObjectSet([
     "age",
     "authorization",
@@ -7152,7 +7152,7 @@
     return parsed;
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/AxiosHeaders.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/AxiosHeaders.js
   var $internals = /* @__PURE__ */ Symbol("internals");
   function normalizeHeader(header) {
     return header && String(header).trim().toLowerCase();
@@ -7381,7 +7381,7 @@
   utils_default.freezeMethods(AxiosHeaders);
   var AxiosHeaders_default = AxiosHeaders;
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/transformData.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/transformData.js
   function transformData(fns, response) {
     const config = this || defaults_default;
     const context = response || config;
@@ -7394,12 +7394,12 @@
     return data;
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/cancel/isCancel.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/cancel/isCancel.js
   function isCancel(value) {
     return !!(value && value.__CANCEL__);
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/cancel/CanceledError.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/cancel/CanceledError.js
   function CanceledError(message, config, request2) {
     AxiosError_default.call(this, message == null ? "canceled" : message, AxiosError_default.ERR_CANCELED, config, request2);
     this.name = "CanceledError";
@@ -7409,7 +7409,7 @@
   });
   var CanceledError_default = CanceledError;
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/settle.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/settle.js
   function settle(resolve, reject, response) {
     const validateStatus2 = response.config.validateStatus;
     if (!response.status || !validateStatus2 || validateStatus2(response.status)) {
@@ -7425,13 +7425,13 @@
     }
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/parseProtocol.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/parseProtocol.js
   function parseProtocol(url) {
     const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
     return match && match[1] || "";
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/speedometer.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/speedometer.js
   function speedometer(samplesCount, min) {
     samplesCount = samplesCount || 10;
     const bytes = new Array(samplesCount);
@@ -7467,7 +7467,7 @@
   }
   var speedometer_default = speedometer;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/throttle.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/throttle.js
   function throttle(fn2, freq) {
     let timestamp = 0;
     let threshold = 1e3 / freq;
@@ -7502,7 +7502,7 @@
   }
   var throttle_default = throttle;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/progressEventReducer.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/progressEventReducer.js
   var progressEventReducer = (listener, isDownloadStream, freq = 3) => {
     let bytesNotified = 0;
     const _speedometer = speedometer_default(50, 250);
@@ -7537,7 +7537,7 @@
   };
   var asyncDecorator = (fn2) => (...args) => utils_default.asap(() => fn2(...args));
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/isURLSameOrigin.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/isURLSameOrigin.js
   var isURLSameOrigin_default = platform_default.hasStandardBrowserEnv ? /* @__PURE__ */ ((origin2, isMSIE) => (url) => {
     url = new URL(url, platform_default.origin);
     return origin2.protocol === url.protocol && origin2.host === url.host && (isMSIE || origin2.port === url.port);
@@ -7546,7 +7546,7 @@
     platform_default.navigator && /(msie|trident)/i.test(platform_default.navigator.userAgent)
   ) : () => true;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/cookies.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/cookies.js
   var cookies_default = platform_default.hasStandardBrowserEnv ? (
     // Standard browser envs support document.cookie
     {
@@ -7579,17 +7579,17 @@
     }
   );
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/isAbsoluteURL.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/isAbsoluteURL.js
   function isAbsoluteURL(url) {
     return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/combineURLs.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/combineURLs.js
   function combineURLs(baseURL, relativeURL) {
     return relativeURL ? baseURL.replace(/\/?\/$/, "") + "/" + relativeURL.replace(/^\/+/, "") : baseURL;
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/buildFullPath.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/buildFullPath.js
   function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
     let isRelativeUrl = !isAbsoluteURL(requestedURL);
     if (baseURL && (isRelativeUrl || allowAbsoluteUrls == false)) {
@@ -7598,7 +7598,7 @@
     return requestedURL;
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/mergeConfig.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/mergeConfig.js
   var headersToObject = (thing) => thing instanceof AxiosHeaders_default ? { ...thing } : thing;
   function mergeConfig(config1, config2) {
     config2 = config2 || {};
@@ -7678,7 +7678,7 @@
     return config;
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/resolveConfig.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/resolveConfig.js
   var resolveConfig_default = (config) => {
     const newConfig = mergeConfig({}, config);
     let { data, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth } = newConfig;
@@ -7715,7 +7715,7 @@
     return newConfig;
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/adapters/xhr.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/adapters/xhr.js
   var isXHRAdapterSupported = typeof XMLHttpRequest !== "undefined";
   var xhr_default = isXHRAdapterSupported && function(config) {
     return new Promise(function dispatchXhrRequest(resolve, reject) {
@@ -7845,7 +7845,7 @@
     });
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/composeSignals.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/composeSignals.js
   var composeSignals = (signals, timeout) => {
     const { length } = signals = signals ? signals.filter(Boolean) : [];
     if (timeout || length) {
@@ -7881,7 +7881,7 @@
   };
   var composeSignals_default = composeSignals;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/trackStream.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/trackStream.js
   var streamChunk = function* (chunk, chunkSize) {
     let len = chunk.byteLength;
     if (!chunkSize || len < chunkSize) {
@@ -7958,7 +7958,7 @@
     });
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/adapters/fetch.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/adapters/fetch.js
   var DEFAULT_CHUNK_SIZE = 64 * 1024;
   var { isFunction: isFunction2 } = utils_default;
   var globalFetchAPI = (({ fetch, Request, Response }) => ({
@@ -8166,7 +8166,7 @@
   };
   var adapter = getFetch();
 
-  // node_modules/sats-connect/node_modules/axios/lib/adapters/adapters.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/adapters/adapters.js
   var knownAdapters = {
     http: null_default,
     xhr: xhr_default,
@@ -8222,7 +8222,7 @@
     adapters: knownAdapters
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/dispatchRequest.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/dispatchRequest.js
   function throwIfCancellationRequested(config) {
     if (config.cancelToken) {
       config.cancelToken.throwIfRequested();
@@ -8267,10 +8267,10 @@
     });
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/env/data.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/env/data.js
   var VERSION = "1.12.0";
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/validator.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/validator.js
   var validators = {};
   ["object", "boolean", "number", "function", "string", "symbol"].forEach((type, i) => {
     validators[type] = function validator(thing) {
@@ -8334,7 +8334,7 @@
     validators
   };
 
-  // node_modules/sats-connect/node_modules/axios/lib/core/Axios.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/core/Axios.js
   var validators2 = validator_default.validators;
   var Axios = class {
     constructor(instanceConfig) {
@@ -8507,7 +8507,7 @@
   });
   var Axios_default = Axios;
 
-  // node_modules/sats-connect/node_modules/axios/lib/cancel/CancelToken.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/cancel/CancelToken.js
   var CancelToken = class _CancelToken {
     constructor(executor) {
       if (typeof executor !== "function") {
@@ -8605,19 +8605,19 @@
   };
   var CancelToken_default = CancelToken;
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/spread.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/spread.js
   function spread(callback) {
     return function wrap(arr) {
       return callback.apply(null, arr);
     };
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/isAxiosError.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/isAxiosError.js
   function isAxiosError(payload) {
     return utils_default.isObject(payload) && payload.isAxiosError === true;
   }
 
-  // node_modules/sats-connect/node_modules/axios/lib/helpers/HttpStatusCode.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/helpers/HttpStatusCode.js
   var HttpStatusCode = {
     Continue: 100,
     SwitchingProtocols: 101,
@@ -8688,7 +8688,7 @@
   });
   var HttpStatusCode_default = HttpStatusCode;
 
-  // node_modules/sats-connect/node_modules/axios/lib/axios.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/lib/axios.js
   function createInstance(defaultConfig) {
     const context = new Axios_default(defaultConfig);
     const instance = bind(Axios_default.prototype.request, context);
@@ -8721,7 +8721,7 @@
   axios.default = axios;
   var axios_default = axios;
 
-  // node_modules/sats-connect/node_modules/axios/index.js
+  // node_modules/.pnpm/axios@1.12.0/node_modules/axios/index.js
   var {
     Axios: Axios2,
     AxiosError: AxiosError2,
@@ -8741,11 +8741,11 @@
     mergeConfig: mergeConfig2
   } = axios_default;
 
-  // node_modules/base58-js/base58_chars.js
+  // node_modules/.pnpm/base58-js@3.0.3/node_modules/base58-js/base58_chars.js
   var base58_chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   var base58_chars_default = base58_chars;
 
-  // node_modules/base58-js/base58_to_binary.js
+  // node_modules/.pnpm/base58-js@3.0.3/node_modules/base58-js/base58_to_binary.js
   function base58_to_binary(base58String) {
     if (!base58String || typeof base58String !== "string")
       throw new Error(`Expected base58 string but got \u201C${base58String}\u201D`);
@@ -8775,10 +8775,10 @@
   }
   var base58_to_binary_default = base58_to_binary;
 
-  // node_modules/bitcoin-address-validation/dist/index.js
+  // node_modules/.pnpm/bitcoin-address-validation@3.0.0/node_modules/bitcoin-address-validation/dist/index.js
   var import_bech32 = __toESM(require_dist(), 1);
 
-  // node_modules/sha256-uint8array/dist/sha256-uint8array.mjs
+  // node_modules/.pnpm/sha256-uint8array@0.10.7/node_modules/sha256-uint8array/dist/sha256-uint8array.mjs
   var K = [
     1116352408 | 0,
     1899447441 | 0,
@@ -9081,7 +9081,7 @@
     return buf[0] === 254;
   }
 
-  // node_modules/bitcoin-address-validation/dist/index.js
+  // node_modules/.pnpm/bitcoin-address-validation@3.0.0/node_modules/bitcoin-address-validation/dist/index.js
   var sha256 = (payload) => createHash().update(payload).digest();
   var Network;
   (function(Network2) {
@@ -9208,7 +9208,7 @@
     }, options);
   };
 
-  // node_modules/sats-connect/node_modules/@sats-connect/core/dist/index.mjs
+  // node_modules/.pnpm/@sats-connect+core@0.10.0_valibot@1.1.0_typescript@5.9.3_/node_modules/@sats-connect/core/dist/index.mjs
   var import_buffer = __toESM(require_buffer(), 1);
   var import_jsontokens2 = __toESM(require_lib2(), 1);
   var import_jsontokens3 = __toESM(require_lib2(), 1);
@@ -11504,7 +11504,7 @@
     [DefaultAdaptersInfo.unisat.id]: UnisatAdapter
   };
 
-  // node_modules/sats-connect/node_modules/@sats-connect/make-default-provider-config/node_modules/@sats-connect/ui/dist/index.js
+  // node_modules/.pnpm/@sats-connect+ui@0.0.6/node_modules/@sats-connect/ui/dist/index.js
   var Ot = [
     "allowfullscreen",
     "async",
@@ -11543,15 +11543,15 @@
     ...Ot
   ]);
 
-  // node_modules/sats-connect/node_modules/@sats-connect/make-default-provider-config/dist/index.js
+  // node_modules/.pnpm/@sats-connect+make-default-provider-config@0.0.10_@sats-connect+core@0.10.0_valibot@1.1_c357ecc62544ea8b14eb27d7e141295c/node_modules/@sats-connect/make-default-provider-config/dist/index.js
   var import_bowser = __toESM(require_es5(), 1);
 
-  // node_modules/sats-connect/node_modules/@sats-connect/make-default-provider-config/dist/isXverseInAppBrowser.js
+  // node_modules/.pnpm/@sats-connect+make-default-provider-config@0.0.10_@sats-connect+core@0.10.0_valibot@1.1_c357ecc62544ea8b14eb27d7e141295c/node_modules/@sats-connect/make-default-provider-config/dist/isXverseInAppBrowser.js
   function isXverseInAppBrowser() {
     return typeof window.ReactNativeWebView !== "undefined";
   }
 
-  // node_modules/sats-connect/node_modules/@sats-connect/make-default-provider-config/dist/index.js
+  // node_modules/.pnpm/@sats-connect+make-default-provider-config@0.0.10_@sats-connect+core@0.10.0_valibot@1.1_c357ecc62544ea8b14eb27d7e141295c/node_modules/@sats-connect/make-default-provider-config/dist/index.js
   function appStoreUrl(p) {
     const browser = import_bowser.default.getParser(window.navigator.userAgent);
     if (browser.satisfies({
@@ -11617,7 +11617,7 @@
     return config;
   }
 
-  // node_modules/@sats-connect/ui/dist/index.js
+  // node_modules/.pnpm/@sats-connect+ui@0.0.7/node_modules/@sats-connect/ui/dist/index.js
   function st(e) {
     return Object.keys(e).reduce((n, i) => {
       const r = e[i];
@@ -13505,7 +13505,7 @@ summary {
     window.dispatchEvent(e);
   }
 
-  // node_modules/sats-connect/dist/index.mjs
+  // node_modules/.pnpm/sats-connect@4.2.1_typescript@5.9.3/node_modules/sats-connect/dist/index.mjs
   var Wallet = class {
     constructor() {
       __publicField(this, "providerId");

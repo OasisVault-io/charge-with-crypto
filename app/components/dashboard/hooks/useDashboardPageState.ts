@@ -1,4 +1,4 @@
-import { useReducer } from 'react'
+import { useReducer, useCallback } from 'react'
 
 import {
   createCheckoutDraft,
@@ -218,45 +218,45 @@ export const useDashboardPageState = (
 
   return {
     state,
-    hydrate(
+    hydrate: useCallback((
       initialData: DashboardData,
       nextAppConfig: DashboardConfig | null | undefined,
-    ) {
+    ) => {
       dispatch({ type: 'hydrate', initialData, appConfig: nextAppConfig })
-    },
-    dashboardReloaded(
+    }, []),
+    dashboardReloaded: useCallback((
       next: DashboardData,
       nextAppConfig: DashboardConfig | null | undefined,
-    ) {
+    ) => {
       dispatch({ type: 'dashboard_reloaded', next, appConfig: nextAppConfig })
-    },
-    setDashboardToken(value: string) {
+    }, []),
+    setDashboardToken: useCallback((value: string) => {
       dispatch({ type: 'dashboard_token_set', value })
-    },
-    clearDashboardToken() {
+    }, []),
+    clearDashboardToken: useCallback(() => {
       dispatch({ type: 'dashboard_token_set', value: '' })
-    },
-    setAuthInput(value: string) {
+    }, []),
+    setAuthInput: useCallback((value: string) => {
       dispatch({ type: 'auth_input_set', value })
-    },
-    setActiveSection(section: DashboardSection) {
+    }, []),
+    setActiveSection: useCallback((section: DashboardSection) => {
       dispatch({ type: 'active_section_set', section })
-    },
-    setCreatedCheckout(value: DashboardCreatedCheckout | null) {
+    }, []),
+    setCreatedCheckout: useCallback((value: DashboardCreatedCheckout | null) => {
       dispatch({ type: 'created_checkout_set', value })
-    },
-    setMerchantStatus(value: string) {
+    }, []),
+    setMerchantStatus: useCallback((value: string) => {
       dispatch({ type: 'merchant_status_set', value })
-    },
-    setAuthStatus(value: string) {
+    }, []),
+    setAuthStatus: useCallback((value: string) => {
       dispatch({ type: 'auth_status_set', value })
-    },
-    setExpandedPlanIndex(value: number | null) {
+    }, []),
+    setExpandedPlanIndex: useCallback((value: number | null) => {
       dispatch({ type: 'expanded_plan_index_set', value })
-    },
-    setPaymentFilter(value: PaymentFilterState) {
+    }, []),
+    setPaymentFilter: useCallback((value: PaymentFilterState) => {
       dispatch({ type: 'payment_filter_set', value })
-    },
+    }, []),
     patchPaymentFilter(patch: Partial<PaymentFilterState>) {
       dispatch({
         type: 'payment_filter_set',
