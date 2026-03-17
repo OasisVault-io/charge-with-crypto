@@ -1,14 +1,14 @@
 // @ts-nocheck
-const { parseJsonBody, sendJson } = require('../utils/http.ts');
-const { createQuote, getActiveQuote, getActiveQuotesForCheckout, getQuoteById, getLatestQuoteForSelection } = require('../services/core/quoteService.ts');
-const { verifyPaymentAndRecord, reconcilePendingCheckoutPayments } = require('../services/core/paymentService.ts');
-const { resolveCheckoutFromMerchant } = require('../services/core/merchantWebhookService.ts');
-const { randomId } = require('../utils/id.ts');
+const { normalizeProductId, publicProduct, productEndpoints, requireProduct, resolveProductMerchant, buildProductCheckoutInput, upsertManagedProducts } = require('../services/catalog/productService.ts');
+const { resolveCheckoutFromMerchant } = require('../services/merchant/merchantWebhookClient.ts');
+const { verifyPaymentAndRecord, reconcilePendingCheckoutPayments } = require('../services/payments/paymentService.ts');
+const { createQuote, getActiveQuote, getActiveQuotesForCheckout, getQuoteById, getLatestQuoteForSelection } = require('../services/payments/quoteService.ts');
+const { isFixedPegAsset } = require('../services/pricing/priceSupport.ts');
 const { normalizeUsdCents } = require('../utils/amounts.ts');
-const { requireAddress, requireChainAddress, requireEnum, requireOptionalString, requireUrl } = require('../utils/validation.ts');
-const { isFixedPegAsset } = require('../services/core/priceService.ts');
 const { requireBitcoinXpub } = require('../utils/bitcoin.ts');
-const { normalizeProductId, publicProduct, productEndpoints, requireProduct, resolveProductMerchant, buildProductCheckoutInput, upsertManagedProducts } = require('../services/core/productService.ts');
+const { parseJsonBody, sendJson } = require('../utils/http.ts');
+const { randomId } = require('../utils/id.ts');
+const { requireChainAddress, requireEnum, requireOptionalString, requireUrl } = require('../utils/validation.ts');
 
 const DEFAULT_ACCEPTED_ASSETS = ['USDC', 'USDT'];
 const DEFAULT_MERCHANT_ID = 'merchant_default';

@@ -1,11 +1,11 @@
+import { getAppContext } from '../lib/runtime'
 import { json } from '../lib/utils/api'
-import { getMcpInfo, handleMcp } from '../lib/services/mcpService'
 
 export async function loader() {
-	return json(getMcpInfo())
+	return json(getAppContext().mcpService.info())
 }
 
 export async function action({ request }: { request: Request }) {
-	const result = await handleMcp(request)
+	const result = await getAppContext().mcpService.handleRequest(request)
 	return json(result.body, { status: result.status })
 }

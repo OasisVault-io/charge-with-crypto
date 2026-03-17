@@ -1,7 +1,7 @@
 // @ts-nocheck
 const QRCode = require('qrcode');
-const { getActiveQuotesForCheckout } = require('./quoteService');
-const { recordManualDetectedPayment } = require('./paymentService');
+const { getActiveQuotesForCheckout } = require('./quoteFlows');
+const { recordManualDetectedPayment } = require('./paymentFlows');
 const { formatBitcoinUri } = require('../utils/bitcoin');
 
 class BitcoinManualPaymentService {

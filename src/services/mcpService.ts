@@ -1,6 +1,6 @@
 // @ts-nocheck
 const { createCheckoutResponse } = require('../routes/api');
-const { buildProductCheckoutInput, productEndpoints, publicProduct, requireProduct, resolveProductMerchant } = require('./productService');
+const { buildProductCheckoutInput, productEndpoints, publicProduct, requireProduct, resolveProductMerchant } = require('./productCatalog');
 
 const MCP_SERVER_VERSION = '1.0.0';
 

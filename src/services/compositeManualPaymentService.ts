@@ -1,5 +1,5 @@
 // @ts-nocheck
-const { getActiveQuotesForCheckout } = require('./quoteService');
+const { getActiveQuotesForCheckout } = require('./quoteFlows');
 
 class CompositeManualPaymentService {
   constructor({ evmService, bitcoinService }) {

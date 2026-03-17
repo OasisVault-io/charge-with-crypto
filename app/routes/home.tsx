@@ -1,4 +1,4 @@
-import type { MetaFunction } from 'react-router';
+import  { type MetaFunction } from 'react-router';
 
 export const meta: MetaFunction = () => [
   { title: 'Charge With Crypto | Open-source crypto checkout' },

@@ -1,14 +1,14 @@
 // @ts-nocheck
 const { parseJsonBody, sendJson } = require('../utils/http');
-const { createQuote, getActiveQuote, getActiveQuotesForCheckout, getQuoteById, getLatestQuoteForSelection } = require('../services/quoteService');
-const { verifyPaymentAndRecord, reconcilePendingCheckoutPayments } = require('../services/paymentService');
-const { resolveCheckoutFromMerchant } = require('../services/merchantWebhookService');
+const { createQuote, getActiveQuote, getActiveQuotesForCheckout, getQuoteById, getLatestQuoteForSelection } = require('../services/quoteFlows');
+const { verifyPaymentAndRecord, reconcilePendingCheckoutPayments } = require('../services/paymentFlows');
+const { resolveCheckoutFromMerchant } = require('../services/merchantWebhookClient');
 const { randomId } = require('../utils/id');
 const { normalizeUsdCents } = require('../utils/amounts');
 const { requireAddress, requireChainAddress, requireEnum, requireOptionalString, requireUrl } = require('../utils/validation');
 const { isFixedPegAsset } = require('../services/priceService');
 const { requireBitcoinXpub } = require('../utils/bitcoin');
-const { normalizeProductId, publicProduct, productEndpoints, requireProduct, resolveProductMerchant, buildProductCheckoutInput, upsertManagedProducts } = require('../services/productService');
+const { normalizeProductId, publicProduct, productEndpoints, requireProduct, resolveProductMerchant, buildProductCheckoutInput, upsertManagedProducts } = require('../services/productCatalog');
 
 const DEFAULT_ACCEPTED_ASSETS = ['USDC', 'USDT'];
 const DEFAULT_MERCHANT_ID = 'merchant_default';

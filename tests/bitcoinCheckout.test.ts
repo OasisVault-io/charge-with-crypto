@@ -1,18 +1,18 @@
 // @ts-nocheck
-const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { Readable } = require('node:stream');
+const test = require('node:test');
 const { BIP32Factory } = require('bip32');
 const ecc = require('tiny-secp256k1');
-const { SqliteStore } = require('../app/lib/store/sqliteStore');
-const { ProviderRegistry } = require('../app/lib/services/core/provider');
 const { handleApi, ensureMerchantDefaults } = require('../app/lib/legacy/api');
-const { BitcoinAddressService } = require('../app/lib/services/core/bitcoinAddressService');
-const { BitcoinManualPaymentService } = require('../app/lib/services/core/bitcoinManualPaymentService');
-const { CompositeManualPaymentService } = require('../app/lib/services/core/compositeManualPaymentService');
+const { BitcoinAddressService } = require('../app/lib/services/chains/bitcoin/bitcoinAddressService');
+const { BitcoinManualPaymentService } = require('../app/lib/services/chains/bitcoin/bitcoinManualPaymentService');
+const { CompositeManualPaymentService } = require('../app/lib/services/manual-payment/compositeManualPaymentService');
+const { ProviderRegistry } = require('../app/lib/services/shared/provider');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
 
 const bip32 = BIP32Factory(ecc);
 

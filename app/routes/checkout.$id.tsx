@@ -1,7 +1,7 @@
 import { useLoaderData } from 'react-router'
 
 import { CheckoutPage } from '../components/checkout/CheckoutPage'
-import { getCheckoutBootstrap } from '../lib/services/checkoutService'
+import { getAppContext } from '../lib/runtime'
 
 export async function loader({
   params,
@@ -14,7 +14,7 @@ export async function loader({
   const url = new URL(request.url)
   return {
     checkoutId,
-    initialData: await getCheckoutBootstrap(checkoutId),
+    initialData: await getAppContext().checkoutService.getCheckoutBootstrap(checkoutId),
     templateParam: String(url.searchParams.get('template') || ''),
   }
 }

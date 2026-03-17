@@ -1,17 +1,11 @@
-import { json } from '../../lib/utils/api'
-import { resolveX402 } from '../../lib/services/x402Service'
+import { getAppContext } from '../../lib/runtime'
+import { json, x402ErrorResponse } from '../../lib/utils/api'
 
 export async function action({ request }: { request: Request }) {
 	try {
-		const result = await resolveX402(request)
+		const result = await getAppContext().x402Service.resolveRequest(request)
 		return json(result.body, { status: result.status, headers: result.headers })
-	} catch (err: any) {
-		return json(
-			{
-				error: err.code || err.message || 'x402_error',
-				message: err.message,
-			},
-			{ status: err.statusCode || 500 },
-		)
+	} catch (error) {
+		return x402ErrorResponse(error)
 	}
 }

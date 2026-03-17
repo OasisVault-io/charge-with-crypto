@@ -1,9 +1,9 @@
 // @ts-nocheck
-const test = require('node:test');
 const assert = require('node:assert/strict');
+const test = require('node:test');
 const { BIP32Factory } = require('bip32');
 const ecc = require('tiny-secp256k1');
-const { BitcoinVerifier } = require('../app/lib/services/core/bitcoinVerifier');
+const { BitcoinVerifier } = require('../app/lib/services/chains/bitcoin/bitcoinVerifier');
 
 const bip32 = BIP32Factory(ecc);
 

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 // @ts-nocheck
-const { getActiveQuotesForCheckout } = require('./quoteService');
+const { getActiveQuotesForCheckout } = require('./quoteFlows');
 class CompositeManualPaymentService {
     constructor({ evmService, bitcoinService }) {
         this.evmService = evmService;

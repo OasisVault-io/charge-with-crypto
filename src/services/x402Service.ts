@@ -4,11 +4,11 @@ const { x402HTTPResourceServer } = require('@x402/core/http');
 const { ExactEvmScheme } = require('@x402/evm/exact/server');
 const { createCdpAuthHeaders, createFacilitatorConfig } = require('@coinbase/x402');
 const { bazaarResourceServerExtension, declareDiscoveryExtension } = require('@x402/extensions/bazaar');
-const { resolveCheckoutFromMerchant } = require('./merchantWebhookService');
-const { buildProductSale, requireProduct, resolveProductMerchant, resolvePurchaseId } = require('./productService');
-const { recordConfirmedExternalPayment } = require('./paymentService');
+const { resolveCheckoutFromMerchant } = require('./merchantWebhookClient');
+const { buildProductSale, requireProduct, resolveProductMerchant, resolvePurchaseId } = require('./productCatalog');
+const { recordConfirmedExternalPayment } = require('./paymentFlows');
 const { createCheckoutResponse } = require('../routes/api');
-const { createQuote, getActiveQuote } = require('./quoteService');
+const { createQuote, getActiveQuote } = require('./quoteFlows');
 
 const DEFAULT_MERCHANT_ID = 'merchant_default';
 const X402_RESOURCE_PATH = '/api/x402/resolve';

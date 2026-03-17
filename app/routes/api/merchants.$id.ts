@@ -1,5 +1,5 @@
-import { apiError, json } from '../../lib/utils/api';
-import { updateMerchant } from '../../lib/services/dashboardService';
+import { getAppContext } from '../../lib/runtime';
+import { apiError, apiErrorResponse, json } from '../../lib/utils/api';
 
 export async function action({ request, params }: { request: Request; params: { id?: string } }) {
   const merchantId = params.id;
@@ -7,8 +7,11 @@ export async function action({ request, params }: { request: Request; params: { 
   if (!merchantId) return apiError('merchant not found', 404);
 
   try {
-    return json(await updateMerchant(request, merchantId));
-  } catch (err: any) {
-    return apiError(err.message || 'invalid_request', err.statusCode || 400);
+    return json(await getAppContext().dashboardService.updateMerchant(request, merchantId));
+  } catch (error) {
+    return apiErrorResponse(error, {
+      defaultCode: 'invalid_request',
+      defaultStatus: 400,
+    });
   }
 }

@@ -14,3 +14,5 @@ function isExpired(expiresAt, now = new Date()) {
 }
 
 module.exports = { nowIso, addSeconds, isExpired };
+
+export { addSeconds, isExpired, nowIso }

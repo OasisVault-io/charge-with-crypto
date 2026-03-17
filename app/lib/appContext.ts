@@ -1,24 +1,30 @@
-// @ts-nocheck
 import { config, validateRuntimeConfig } from './config'
-import { BitcoinAddressService } from './services/bitcoinAddressService'
 import { BalanceService } from './services/balanceService'
-import { BitcoinManualPaymentService } from './services/bitcoinManualPaymentService'
-import { BitcoinVerifier } from './services/bitcoinVerifier'
-import { CompositeManualPaymentService } from './services/compositeManualPaymentService'
-import { ensureMerchantDefaults } from './services/merchantDefaults'
-import { EvmVerifier } from './services/evmVerifier'
-import { ManualPaymentService } from './services/manualPaymentService'
-import { McpService } from './services/mcpService'
-import { PriceService } from './services/priceService'
-import { ProviderRegistry } from './services/provider'
-import { X402Service } from './services/x402Service'
+import { ProductService } from './services/catalog/productService'
+import { BitcoinAddressService } from './services/chains/bitcoin/bitcoinAddressService'
+import { BitcoinManualPaymentService } from './services/chains/bitcoin/bitcoinManualPaymentService'
+import { BitcoinVerifier } from './services/chains/bitcoin/bitcoinVerifier'
+import { EvmVerifier } from './services/chains/evm/evmVerifier'
+import { CheckoutService } from './services/checkout/checkoutService'
+import { CompositeManualPaymentService } from './services/manual-payment/compositeManualPaymentService'
+import { ManualPaymentService } from './services/manual-payment/manualPaymentService'
+import { ConfigService } from './services/merchant/configService'
+import { DashboardService } from './services/merchant/dashboardService'
+import { ensureMerchantDefaults } from './services/merchant/merchantDefaults'
+import { PaymentService } from './services/payments/paymentService'
+import { QuoteService } from './services/payments/quoteService'
+import { PriceService } from './services/pricing/priceService'
+import { McpService } from './services/protocols/mcpService'
+import { X402Service } from './services/protocols/x402Service'
+import { ProviderRegistry } from './services/shared/provider'
+import { createServiceRepositories } from './services/shared/repositories'
 import { SqliteStore } from './store/sqliteStore'
 
-function createAppContext(customConfig = config) {
+function createAppContext(customConfig: typeof config = config) {
 	validateRuntimeConfig(customConfig)
 
 	const store = new SqliteStore(customConfig.dataDir)
-	ensureMerchantDefaults(store, customConfig)
+	const repositories = createServiceRepositories(store)
 
 	const providers = new ProviderRegistry()
 	Object.keys(customConfig.chains).forEach((chain) => {
@@ -44,6 +50,16 @@ function createAppContext(customConfig = config) {
 
 	const priceService = new PriceService({ config: customConfig })
 	const balanceService = new BalanceService({ config: customConfig })
+	const paymentService = new PaymentService({
+		repositories,
+		providers,
+		config: customConfig,
+	})
+	const quoteService = new QuoteService({
+		repositories,
+		priceService,
+		config: customConfig,
+	})
 	const evmManualPaymentService = new ManualPaymentService({
 		store,
 		config: customConfig,
@@ -60,10 +76,42 @@ function createAppContext(customConfig = config) {
 		store,
 		config: customConfig,
 	})
+	const productService = new ProductService({
+		repositories,
+		config: customConfig,
+		priceService,
+		manualPaymentService,
+		bitcoinAddressService,
+	})
+	ensureMerchantDefaults(repositories, customConfig, productService)
 	const x402Service = new X402Service({
 		store,
 		config: customConfig,
 		priceService,
+		manualPaymentService,
+		bitcoinAddressService,
+		productService,
+	})
+	productService.setX402Service(x402Service)
+	const configService = new ConfigService({
+		config: customConfig,
+		priceService,
+		manualPaymentService,
+		x402Service,
+	})
+	const dashboardService = new DashboardService({
+		repositories,
+		config: customConfig,
+		productService,
+	})
+	const checkoutService = new CheckoutService({
+		repositories,
+		config: customConfig,
+		providers,
+		configService,
+		quoteService,
+		paymentService,
+		balanceService,
 		manualPaymentService,
 		bitcoinAddressService,
 	})
@@ -74,14 +122,21 @@ function createAppContext(customConfig = config) {
 		manualPaymentService,
 		bitcoinAddressService,
 		x402Service,
+		productService,
 	})
 
 	return {
 		config: customConfig,
 		store,
 		providers,
+		configService,
+		checkoutService,
+		dashboardService,
+		productService,
 		priceService,
 		balanceService,
+		paymentService,
+		quoteService,
 		manualPaymentService,
 		bitcoinAddressService,
 		x402Service,
@@ -89,7 +144,9 @@ function createAppContext(customConfig = config) {
 	}
 }
 
-function startAppContext(context) {
+type AppContext = ReturnType<typeof createAppContext>
+
+function startAppContext(context: AppContext) {
 	context.manualPaymentService.start()
 	context.x402Service?.initialize?.().catch((err) => {
 		console.error('x402_init_error', err)
@@ -97,7 +154,7 @@ function startAppContext(context) {
 	return context
 }
 
-function stopAppContext(context) {
+function stopAppContext(context: AppContext) {
 	context.manualPaymentService.stop()
 }
 

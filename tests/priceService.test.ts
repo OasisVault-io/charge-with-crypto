@@ -1,7 +1,7 @@
 // @ts-nocheck
-const test = require('node:test');
 const assert = require('node:assert/strict');
-const { PriceService } = require('../app/lib/services/core/priceService');
+const test = require('node:test');
+const { PriceService } = require('../app/lib/services/pricing/priceService');
 
 test('price service pins stablecoins to a fixed 1:1 USD quote without remote pricing', async () => {
   const service = new PriceService({

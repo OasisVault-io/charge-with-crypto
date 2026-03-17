@@ -1,68 +1,118 @@
-// @ts-nocheck
 import fs from 'node:fs'
 import path from 'node:path'
-
+import {
+	type CollectionMap,
+	type CollectionName,
+	type InsertableRecord,
+	type PatchRecord,
+	type StoreLike,
+} from '../services/shared/types'
 import { randomId } from '../utils/id'
 import { nowIso } from '../utils/time'
 
-class JsonStore {
-  constructor(dataDir) {
-    this.dataDir = dataDir;
-    this.collections = ['merchants', 'products', 'checkouts', 'quotes', 'payments', 'events', 'webhook_deliveries'];
-    this.ensure();
-  }
+class JsonStore implements StoreLike {
+	dataDir: string
+	collections: CollectionName[]
 
-  ensure() {
-    fs.mkdirSync(this.dataDir, { recursive: true });
-    for (const name of this.collections) {
-      const file = this.filePath(name);
-      if (!fs.existsSync(file)) {
-        fs.writeFileSync(file, '[]\n');
-      }
-    }
-  }
+	constructor(dataDir: string) {
+		this.dataDir = dataDir
+		this.collections = [
+			'merchants',
+			'products',
+			'checkouts',
+			'quotes',
+			'payments',
+			'events',
+			'webhook_deliveries',
+			'idempotency_keys',
+			'counters',
+		]
+		this.ensure()
+	}
 
-  filePath(name) {
-    return path.join(this.dataDir, `${name}.json`);
-  }
+	ensure() {
+		fs.mkdirSync(this.dataDir, { recursive: true })
+		for (const name of this.collections) {
+			const file = this.filePath(name)
+			if (!fs.existsSync(file)) {
+				fs.writeFileSync(file, '[]\n')
+			}
+		}
+	}
 
-  read(name) {
-    return JSON.parse(fs.readFileSync(this.filePath(name), 'utf8'));
-  }
+	filePath(name: CollectionName) {
+		return path.join(this.dataDir, `${name}.json`)
+	}
 
-  write(name, items) {
-    fs.writeFileSync(this.filePath(name), `${JSON.stringify(items, null, 2)}\n`);
-  }
+	read<C extends CollectionName>(name: C): CollectionMap[C][] {
+		return JSON.parse(
+			fs.readFileSync(this.filePath(name), 'utf8'),
+		) as CollectionMap[C][]
+	}
 
-  list(name) {
-    return this.read(name);
-  }
+	write<C extends CollectionName>(name: C, items: CollectionMap[C][]) {
+		fs.writeFileSync(this.filePath(name), `${JSON.stringify(items, null, 2)}\n`)
+	}
 
-  getById(name, id) {
-    return this.read(name).find((x) => x.id === id) || null;
-  }
+	list<C extends CollectionName>(name: C): CollectionMap[C][] {
+		return this.read(name)
+	}
 
-  insert(name, item) {
-    const items = this.read(name);
-    const withMeta = { id: item.id || randomId(name), createdAt: nowIso(), updatedAt: nowIso(), ...item };
-    items.push(withMeta);
-    this.write(name, items);
-    return withMeta;
-  }
+	getById<C extends CollectionName>(
+		name: C,
+		id: string,
+	): CollectionMap[C] | null {
+		return this.read(name).find((item) => item.id === id) || null
+	}
 
-  update(name, id, patch) {
-    const items = this.read(name);
-    const index = items.findIndex((x) => x.id === id);
-    if (index === -1) return null;
-    const updated = { ...items[index], ...patch, updatedAt: nowIso() };
-    items[index] = updated;
-    this.write(name, items);
-    return updated;
-  }
+	insert<C extends CollectionName>(
+		name: C,
+		item: InsertableRecord<CollectionMap[C]>,
+	): CollectionMap[C] {
+		const items = this.read(name)
+		const timestamp = nowIso()
+		const withMeta = {
+			id: String(item.id || randomId(name)),
+			createdAt: timestamp,
+			updatedAt: timestamp,
+			...item,
+		} as CollectionMap[C]
+		items.push(withMeta)
+		this.write(name, items)
+		return withMeta
+	}
 
-  find(name, predicate) {
-    return this.read(name).filter(predicate);
-  }
+	update<C extends CollectionName>(
+		name: C,
+		id: string,
+		patch: PatchRecord<CollectionMap[C]>,
+	): CollectionMap[C] | null {
+		const items = this.read(name)
+		const index = items.findIndex((item) => item.id === id)
+		if (index === -1) return null
+		const updated = {
+			...items[index],
+			...patch,
+			updatedAt: nowIso(),
+		} as CollectionMap[C]
+		items[index] = updated
+		this.write(name, items)
+		return updated
+	}
+
+	find<C extends CollectionName>(
+		name: C,
+		predicate: (item: CollectionMap[C]) => boolean,
+	): CollectionMap[C][] {
+		return this.read(name).filter(predicate)
+	}
+
+	findOne<C extends CollectionName>(
+		name: C,
+		predicate: (item: CollectionMap[C]) => boolean,
+	): CollectionMap[C] | null {
+		return this.read(name).find(predicate) || null
+	}
 }
 
 export { JsonStore }

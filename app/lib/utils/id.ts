@@ -6,3 +6,5 @@ function randomId(prefix = 'id') {
 }
 
 module.exports = { randomId };
+
+export { randomId }

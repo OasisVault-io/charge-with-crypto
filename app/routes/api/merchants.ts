@@ -1,15 +1,18 @@
-import { apiError, json } from '../../lib/utils/api';
-import { createMerchant, listMerchants } from '../../lib/services/dashboardService';
+import { getAppContext } from '../../lib/runtime';
+import { apiError, apiErrorResponse, json } from '../../lib/utils/api';
 
 export async function loader() {
-  return json(listMerchants());
+  return json(getAppContext().dashboardService.listMerchants());
 }
 
 export async function action({ request }: { request: Request }) {
   if (request.method !== 'POST') return apiError('method_not_allowed', 405);
   try {
-    return json(await createMerchant(request), { status: 201 });
-  } catch (err: any) {
-    return apiError(err.message || 'invalid_request', err.statusCode || 400);
+    return json(await getAppContext().dashboardService.createMerchant(request), { status: 201 });
+  } catch (error) {
+    return apiErrorResponse(error, {
+      defaultCode: 'invalid_request',
+      defaultStatus: 400,
+    });
   }
 }

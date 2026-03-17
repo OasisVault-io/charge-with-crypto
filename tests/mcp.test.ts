@@ -1,12 +1,12 @@
 // @ts-nocheck
-const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const test = require('node:test');
 const { ensureMerchantDefaults } = require('../app/lib/legacy/api');
-const { McpService } = require('../app/lib/services/core/mcpService');
+const { McpService } = require('../app/lib/services/protocols/mcpService');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
 
 test('mcp endpoint exposes product discovery plus human and agent helper tools', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-mcp-'));

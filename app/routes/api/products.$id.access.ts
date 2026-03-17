@@ -1,5 +1,5 @@
-import { json } from '../../lib/utils/api'
-import { productAccessX402 } from '../../lib/services/x402Service'
+import { getAppContext } from '../../lib/runtime'
+import { json, x402ErrorResponse } from '../../lib/utils/api'
 
 export async function action({
 	request,
@@ -9,15 +9,12 @@ export async function action({
 	params: { id?: string }
 }) {
 	try {
-		const result = await productAccessX402(request, params.id || '')
-		return json(result.body, { status: result.status, headers: result.headers })
-	} catch (err: any) {
-		return json(
-			{
-				error: err.code || err.message || 'x402_error',
-				message: err.message,
-			},
-			{ status: err.statusCode || 500 },
+		const result = await getAppContext().x402Service.productAccessRequest(
+			request,
+			params.id || '',
 		)
+		return json(result.body, { status: result.status, headers: result.headers })
+	} catch (error) {
+		return x402ErrorResponse(error)
 	}
 }

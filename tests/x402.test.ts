@@ -1,14 +1,14 @@
 // @ts-nocheck
-const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { Readable } = require('node:stream');
+const test = require('node:test');
 const { decodePaymentRequiredHeader, decodePaymentResponseHeader, encodePaymentSignatureHeader } = require('@x402/core/http');
-const { SqliteStore } = require('../app/lib/store/sqliteStore');
 const { handleApi, ensureMerchantDefaults } = require('../app/lib/legacy/api');
-const { X402Service } = require('../app/lib/services/core/x402Service');
+const { X402Service } = require('../app/lib/services/protocols/x402Service');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
 
 async function invokeApi({ method, url, body, ctx, headers = {} }) {
   const payload = body ? JSON.stringify(body) : '';

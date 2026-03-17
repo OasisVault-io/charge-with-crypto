@@ -1,5 +1,5 @@
-import { apiError, json } from '../../lib/utils/api'
-import { submitCheckoutTx } from '../../lib/services/checkoutService'
+import { getAppContext } from '../../lib/runtime'
+import { apiError, apiErrorResponse, json } from '../../lib/utils/api'
 
 export async function action({
 	request,
@@ -13,9 +13,11 @@ export async function action({
 	if (!id) return apiError('checkout not found', 404)
 
 	try {
-		return json(await submitCheckoutTx(request, id))
-	} catch (err: any) {
-		if (err.body) return json(err.body, { status: err.statusCode || 400 })
-		return apiError(err.message || 'invalid_request', err.statusCode || 400)
+		return json(await getAppContext().checkoutService.submitCheckoutTx(request, id))
+	} catch (error) {
+		return apiErrorResponse(error, {
+			defaultCode: 'invalid_request',
+			defaultStatus: 400,
+		})
 	}
 }

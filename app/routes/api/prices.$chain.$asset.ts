@@ -1,11 +1,14 @@
-import { apiError, json } from '../../lib/utils/api';
-import { getAssetPrice } from '../../lib/services/configService';
+import { getAppContext } from '../../lib/runtime';
+import { apiError, apiErrorResponse, json } from '../../lib/utils/api';
 
 export async function loader({ params }: { params: { chain?: string; asset?: string } }) {
   if (!params.chain || !params.asset) return apiError('route params missing', 400);
   try {
-    return json(await getAssetPrice(params.chain, params.asset));
-  } catch (err: any) {
-    return apiError(err.message || 'invalid_request', err.statusCode || 400);
+    return json(await getAppContext().configService.getAssetPrice(params.chain, params.asset));
+  } catch (error) {
+    return apiErrorResponse(error, {
+      defaultCode: 'invalid_request',
+      defaultStatus: 400,
+    });
   }
 }

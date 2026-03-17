@@ -1,11 +1,11 @@
 // @ts-nocheck
 const QRCode = require('qrcode');
-const { getActiveQuotesForCheckout } = require('./quoteService');
+const { getActiveQuotesForCheckout } = require('./quoteFlows');
 const { isFixedPegAsset } = require('./priceService');
-const { recordManualDetectedPayment } = require('./paymentService');
+const { recordManualDetectedPayment } = require('./paymentFlows');
 const { nowIso } = require('../utils/time');
 const { normalizeAddress } = require('../utils/validation');
-const { requestJson } = require('./merchantWebhookService');
+const { requestJson } = require('./merchantWebhookClient');
 const {
   createViemScannerProvider,
   createViemWalletClient,
