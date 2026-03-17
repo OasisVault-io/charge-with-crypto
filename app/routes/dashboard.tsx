@@ -5,8 +5,8 @@ import {
   type DashboardConfig,
   type DashboardData
 } from '../components/dashboard/dashboard.types';
-import { getPublicConfig } from '../lib/services/config.server';
-import { getDashboardData } from '../lib/services/dashboard.server';
+import { getPublicConfig } from '../lib/services/configService';
+import { getDashboardData } from '../lib/services/dashboardService';
 
 export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);

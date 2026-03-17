@@ -5,8 +5,7 @@
   "description": "Open source wallet-first crypto checkout demo",
   "scripts": {
     "build:wallet-vendors": "node --import tsx scripts/build-wallet-vendors.ts",
-    "build:server": "tsc -p tsconfig.server.json --noCheck && node --import tsx scripts/postbuild-server.ts",
-    "build": "npm run build:wallet-vendors && npm run build:server && react-router build --config vite.react-router.config.ts",
+    "build": "npm run build:wallet-vendors && react-router build --config vite.react-router.config.ts",
     "build:rr7": "react-router build --config vite.react-router.config.ts",
     "dev:rr7": "react-router dev --config vite.react-router.config.ts",
     "dev": "react-router dev --config vite.react-router.config.ts",
@@ -14,7 +13,7 @@
     "routes:rr7": "react-router routes --config vite.react-router.config.ts",
     "start": "react-router-serve ./build/server/index.js",
     "test": "node --import tsx --test tests/**/*.test.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:rr7": "tsc -p tsconfig.rr7.json --noEmit"
   },
   "dependencies": {

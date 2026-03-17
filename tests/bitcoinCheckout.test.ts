@@ -7,12 +7,12 @@ const path = require('node:path');
 const { Readable } = require('node:stream');
 const { BIP32Factory } = require('bip32');
 const ecc = require('tiny-secp256k1');
-const { SqliteStore } = require('../src/store/sqliteStore');
-const { ProviderRegistry } = require('../src/services/provider');
-const { handleApi, ensureMerchantDefaults } = require('../src/routes/api');
-const { BitcoinAddressService } = require('../src/services/bitcoinAddressService');
-const { BitcoinManualPaymentService } = require('../src/services/bitcoinManualPaymentService');
-const { CompositeManualPaymentService } = require('../src/services/compositeManualPaymentService');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const { ProviderRegistry } = require('../app/lib/services/core/provider');
+const { handleApi, ensureMerchantDefaults } = require('../app/lib/legacy/api');
+const { BitcoinAddressService } = require('../app/lib/services/core/bitcoinAddressService');
+const { BitcoinManualPaymentService } = require('../app/lib/services/core/bitcoinManualPaymentService');
+const { CompositeManualPaymentService } = require('../app/lib/services/core/compositeManualPaymentService');
 
 const bip32 = BIP32Factory(ecc);
 

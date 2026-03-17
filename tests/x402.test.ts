@@ -6,9 +6,9 @@ const os = require('node:os');
 const path = require('node:path');
 const { Readable } = require('node:stream');
 const { decodePaymentRequiredHeader, decodePaymentResponseHeader, encodePaymentSignatureHeader } = require('@x402/core/http');
-const { SqliteStore } = require('../src/store/sqliteStore');
-const { handleApi, ensureMerchantDefaults } = require('../src/routes/api');
-const { X402Service } = require('../src/services/x402Service');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const { handleApi, ensureMerchantDefaults } = require('../app/lib/legacy/api');
+const { X402Service } = require('../app/lib/services/core/x402Service');
 
 async function invokeApi({ method, url, body, ctx, headers = {} }) {
   const payload = body ? JSON.stringify(body) : '';

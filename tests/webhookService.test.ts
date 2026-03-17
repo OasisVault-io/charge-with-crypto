@@ -4,9 +4,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { SqliteStore } = require('../src/store/sqliteStore');
-const { deliverWebhook, eventPayload } = require('../src/services/webhookService');
-const { hmacSha256 } = require('../src/utils/crypto');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const { deliverWebhook, eventPayload } = require('../app/lib/services/core/webhookService');
+const { hmacSha256 } = require('../app/lib/utils/crypto');
 
 test('deliverWebhook signs payload and records mock delivery', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-webhook-'));

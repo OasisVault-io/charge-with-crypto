@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { SqliteStore } = require('../src/store/sqliteStore');
-const { ManualPaymentService } = require('../src/services/manualPaymentService');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const { ManualPaymentService } = require('../app/lib/services/core/manualPaymentService');
 
 async function deriveExpectedAddress(index) {
   const { HDNodeWallet } = require('ethers');

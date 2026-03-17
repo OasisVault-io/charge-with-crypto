@@ -121,5 +121,5 @@ The MCP server is an orchestration surface, not a second payment engine. Actual 
 The canonical route ownership is:
 
 - `app/routes/*` owns the new React Router v7 route tree and resource routes
-- `src/*` still owns most shared payment, product, x402, MCP, and persistence logic
+- `app/lib/*` owns the shared payment, product, x402, MCP, and persistence logic used by those routes
 - `app/styles/*` contains the checkout and dashboard presentation layer used by the RR7 app

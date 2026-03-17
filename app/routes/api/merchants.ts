@@ -1,5 +1,5 @@
 import { apiError, json } from '../../lib/utils/api';
-import { createMerchant, listMerchants } from '../../lib/services/dashboard.server';
+import { createMerchant, listMerchants } from '../../lib/services/dashboardService';
 
 export async function loader() {
   return json(listMerchants());

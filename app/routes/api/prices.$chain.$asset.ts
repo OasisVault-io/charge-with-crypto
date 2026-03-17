@@ -1,5 +1,5 @@
 import { apiError, json } from '../../lib/utils/api';
-import { getAssetPrice } from '../../lib/services/config.server';
+import { getAssetPrice } from '../../lib/services/configService';
 
 export async function loader({ params }: { params: { chain?: string; asset?: string } }) {
   if (!params.chain || !params.asset) return apiError('route params missing', 400);

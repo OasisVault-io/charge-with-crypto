@@ -5,13 +5,13 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { setTimeout: sleep } = require('node:timers/promises');
-const { SqliteStore } = require('../src/store/sqliteStore');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
 
 test('recordConfirmedExternalPayment confirms checkout without waiting for webhook delivery', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-payment-service-'));
   const store = new SqliteStore(dir);
-  const webhookService = require('../src/services/webhookService');
-  const paymentServicePath = require.resolve('../src/services/paymentService');
+  const webhookService = require('../app/lib/services/core/webhookService');
+  const paymentServicePath = require.resolve('../app/lib/services/core/paymentService');
   const originalDispatchWebhook = webhookService.dispatchWebhook;
   let dispatchCount = 0;
   webhookService.dispatchWebhook = () => {
@@ -19,7 +19,7 @@ test('recordConfirmedExternalPayment confirms checkout without waiting for webho
     return sleep(250).then(() => ({ delivered: true }));
   };
   delete require.cache[paymentServicePath];
-  const { recordConfirmedExternalPayment } = require('../src/services/paymentService');
+  const { recordConfirmedExternalPayment } = require('../app/lib/services/core/paymentService');
 
   try {
     const merchant = store.insert('merchants', {

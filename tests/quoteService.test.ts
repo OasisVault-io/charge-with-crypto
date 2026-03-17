@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { SqliteStore } = require('../src/store/sqliteStore');
-const { createQuote, getActiveQuote } = require('../src/services/quoteService');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const { createQuote, getActiveQuote } = require('../app/lib/services/core/quoteService');
 
 test('createQuote uses live price abstraction and stores precise base units', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'charge-with-crypto-quote-'));

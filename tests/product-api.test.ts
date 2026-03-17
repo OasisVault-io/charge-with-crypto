@@ -5,9 +5,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { Readable } = require('node:stream');
-const { SqliteStore } = require('../src/store/sqliteStore');
-const { ProviderRegistry } = require('../src/services/provider');
-const { handleApi, ensureMerchantDefaults } = require('../src/routes/api');
+const { SqliteStore } = require('../app/lib/store/sqliteStore');
+const { ProviderRegistry } = require('../app/lib/services/core/provider');
+const { handleApi, ensureMerchantDefaults } = require('../app/lib/legacy/api');
 
 async function invokeApi({ method, url, body, ctx, headers = {} }) {
   const payload = body ? JSON.stringify(body) : '';

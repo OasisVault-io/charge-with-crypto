@@ -1,5 +1,5 @@
 import { apiError, json } from '../../lib/utils/api';
-import { updateMerchant } from '../../lib/services/dashboard.server';
+import { updateMerchant } from '../../lib/services/dashboardService';
 
 export async function action({ request, params }: { request: Request; params: { id?: string } }) {
   const merchantId = params.id;

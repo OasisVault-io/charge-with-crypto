@@ -2,7 +2,7 @@
 
 A self-hosted crypto payment processor for business owners who want one sellable to work for both humans and agents.
 
-The canonical app runs on React Router v7, `viem`, Drizzle, Zod, and Tailwind v4. The route tree lives in `app/`, while `src/` contains the shared checkout engine, payment services, and persistence layer reused by those routes.
+The canonical app runs on React Router v7, `viem`, Drizzle, Zod, and Tailwind v4. The route tree and server-owned checkout logic live under `app/`, with React Router loaders/actions calling directly into `app/lib/*`.
 
 ## How it works
 
@@ -68,8 +68,8 @@ This runs the React Router v7 app on `http://127.0.0.1:4173`.
 
 ## Current structure
 
-- `app/`: React Router v7 routes, route modules, server-side services, and RR7-owned styling
-- `src/`: shared checkout engine, Drizzle-backed persistence adapter, blockchain verification, quotes, manual pay, and webhook services
+- `app/`: React Router v7 routes, route modules, server-side services, backend engine, and RR7-owned styling
+- `src/`: legacy compatibility surface kept during consolidation
 
 ## Scope
 

@@ -1,7 +1,7 @@
 // @ts-nocheck
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { EvmVerifier } = require('../src/services/evmVerifier');
+const { EvmVerifier } = require('../app/lib/services/core/evmVerifier');
 
 test('erc20 verification matches the canonical transfer topic and confirms recipient transfers', async () => {
   const verifier = new EvmVerifier({

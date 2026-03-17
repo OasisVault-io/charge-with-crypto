@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { BIP32Factory } = require('bip32');
 const ecc = require('tiny-secp256k1');
-const { BitcoinVerifier } = require('../src/services/bitcoinVerifier');
+const { BitcoinVerifier } = require('../app/lib/services/core/bitcoinVerifier');
 
 const bip32 = BIP32Factory(ecc);
 
@@ -12,7 +12,7 @@ function testXpub() {
 }
 
 function testAddress() {
-  const { deriveBitcoinAddress } = require('../src/utils/bitcoin');
+  const { deriveBitcoinAddress } = require('../app/lib/utils/bitcoin');
   return deriveBitcoinAddress({
     xpub: testXpub(),
     index: 0,
