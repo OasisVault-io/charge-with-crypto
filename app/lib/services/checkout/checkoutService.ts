@@ -100,6 +100,12 @@ class CheckoutService {
     )
   }
 
+  checkoutUrlForRequest(request: Request, checkout: CheckoutLike) {
+    const template = checkout.checkoutTemplate || 'neutral'
+    const origin = new URL(request.url).origin
+    return `${origin}/checkout/${checkout.id}?template=${template}`
+  }
+
   async getCheckoutBootstrap(id: string) {
     const checkout = this.requireCheckout(id)
     const quotes = this.quoteService.getActiveQuotesForCheckout(checkout.id)
@@ -171,7 +177,10 @@ class CheckoutService {
         created.body,
       )
     }
-    return created.body
+    return {
+      ...created.body,
+      checkoutUrl: this.checkoutUrlForRequest(request, created.body.checkout),
+    }
   }
 
   async resolveCheckout(request: Request) {
@@ -201,7 +210,11 @@ class CheckoutService {
         cancelUrl: (resolved as AnyRecord).cancelUrl || body.cancelUrl,
       },
     })
-    return { ...created.body, resolved: true }
+    return {
+      ...created.body,
+      resolved: true,
+      checkoutUrl: this.checkoutUrlForRequest(request, created.body.checkout),
+    }
   }
 
   async refreshCheckoutQuotes(request: Request, id: string) {

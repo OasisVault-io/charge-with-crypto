@@ -46,6 +46,7 @@ export function CheckoutPage({
   const [manualSelectedRouteKey, setManualSelectedRouteKey] = useState('')
   const [isBusy, setIsBusy] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
+  const [manualAddressCopied, setManualAddressCopied] = useState(false)
   const [now, setNow] = useState(Date.now())
   const [logoSrc, setLogoSrc] = useState(
     safeLogoSrc(initialData?.checkout?.merchantLogoUrl),
@@ -85,6 +86,7 @@ export function CheckoutPage({
     setManualSelectedRouteKey('')
     setIsBusy(false)
     setStatusMessage('')
+    setManualAddressCopied(false)
     setNow(Date.now())
     setLogoSrc(safeLogoSrc(initialData?.checkout?.merchantLogoUrl))
   }, [checkoutId, initialData])
@@ -115,6 +117,10 @@ export function CheckoutPage({
     const interval = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    setManualAddressCopied(false)
+  }, [selectedManualRoute?.address, checkoutId])
 
   const walletCompatibleQuotes = useMemo(() => {
     if (!walletSession) return []
@@ -219,8 +225,10 @@ export function CheckoutPage({
     }
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(address)
+      setManualAddressCopied(true)
       setStatusMessage('Manual address copied.')
       window.setTimeout(() => setStatusMessage(''), 1200)
+      window.setTimeout(() => setManualAddressCopied(false), 1600)
     }
   }
 
@@ -759,7 +767,7 @@ export function CheckoutPage({
                           type="button"
                           onClick={() => void copyManualAddress()}
                         >
-                          Copy address
+                          {manualAddressCopied ? 'Copied ✓' : 'Copy address'}
                         </button>
                         <p className="manual-address-note muted">
                           Demo note: in production, set{' '}
