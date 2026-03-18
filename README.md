@@ -1,7 +1,11 @@
-# Charge With Crypto
+# Open Source Crypto Checkout
 
-A self-hosted crypto payment processor for business owners who want one sellable
-to work for both humans and agents.
+A simple, zero-fee crypto payment processor you can run yourself.
+
+Accept payments directly to your wallet, without intermediaries, approvals, or
+extra fees. Supports both human checkouts and agent-based payments via x402.
+
+Test it, fork it, customize it, and deploy your own version in less than a day.
 
 The canonical app runs on React Router v7, `viem`, Drizzle, Zod, and Tailwind
 v4. The route tree and server-owned checkout logic live under `app/`, with React
