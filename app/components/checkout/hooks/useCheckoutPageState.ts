@@ -116,6 +116,20 @@ const checkoutPageReducer = (
         statusMessage: action.message,
       }
     case 'status_refreshed':
+      if (action.next?.checkout?.status === 'paid') {
+        return {
+          ...state,
+          isBusy: false,
+          manualPanelOpen: false,
+          viewState: {
+            ...state.viewState,
+            ...action.next,
+            config: state.viewState?.config,
+            balances: state.viewState?.balances || {},
+            manualDetails: state.viewState?.manualDetails || null,
+          },
+        }
+      }
       return {
         ...state,
         viewState: {

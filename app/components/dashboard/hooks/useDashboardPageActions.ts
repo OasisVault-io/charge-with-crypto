@@ -108,8 +108,32 @@ export const useDashboardPageActions = ({
   const saveMerchant = useEffectEvent(async () => {
     setMerchantStatus('Saving merchant settings...')
     try {
+      const evmChains = Object.keys(appConfig?.chains || {}).filter(
+        (chain) => chain !== 'bitcoin',
+      )
+      const nextRecipientAddresses = {
+        ...(merchantDraft.recipientAddresses || {}),
+      }
+      const normalizedEvmAddress =
+        evmChains
+          .map((chain) => nextRecipientAddresses[chain] || '')
+          .find(Boolean) || ''
+      if (normalizedEvmAddress) {
+        for (const chain of evmChains) {
+          nextRecipientAddresses[chain] = normalizedEvmAddress
+        }
+      }
       const payload = {
         ...merchantDraft,
+        recipientAddresses: nextRecipientAddresses,
+        manualPaymentEnabledChains: [
+          ...new Set([
+            ...(normalizedEvmAddress ? evmChains : []),
+            ...((merchantDraft.manualPaymentEnabledChains || []).filter(
+              (chain) => chain === 'bitcoin',
+            ) || []),
+          ]),
+        ],
         plans: merchantDraft.plans.map((plan) => ({
           ...plan,
           amountUsd: Number(plan.amountUsd || 0),

@@ -81,10 +81,16 @@ export const useCheckoutPageActions = ({
   const openManualPanel = async () => {
     setStatusMessage('')
     if (!hasManualPayment) return
-    if (!viewState?.manualDetails) {
-      await loadManualDetails()
-    }
     showManualPanel()
+    if (!viewState?.manualDetails) {
+      try {
+        await loadManualDetails()
+      } catch (error: unknown) {
+        setStatusMessage(
+          errorMessage(error, 'Could not load manual payment details.'),
+        )
+      }
+    }
   }
 
   const copyManualAddress = async () => {
@@ -178,6 +184,11 @@ export const useCheckoutPageActions = ({
         if (!address) throw new Error('wallet did not return an address')
         session = { rail: 'evm', provider: 'injected-evm', address }
       }
+
+      // Advance the UI immediately after the wallet handshake completes so
+      // the checkout does not feel inert while the balance scan is in flight.
+      applyWalletConnected(session, {})
+      setStatusMessage('Wallet connected. Scanning balances...')
 
       const scan = await fetchJson<CheckoutViewState>(
         `/api/checkouts/${checkoutId}/balance-scan`,

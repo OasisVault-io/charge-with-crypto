@@ -33,10 +33,12 @@ function assetRail(asset: string): (typeof PAYMENT_RAILS)[number] {
   return asset === 'BTC' ? 'bitcoin' : 'evm'
 }
 
-function merchantSupportsChain(merchant, chain) {
+function merchantSupportsChain(merchant, chain, config?: AppConfig) {
   if (chain === 'bitcoin') {
     return Boolean(
-      merchant?.recipientAddresses?.bitcoin || merchant?.bitcoinXpub,
+      merchant?.recipientAddresses?.bitcoin ||
+        merchant?.bitcoinXpub ||
+        config?.bitcoinPaymentXpub,
     )
   }
   return Boolean(merchant?.recipientAddresses?.[chain])
@@ -127,18 +129,20 @@ function defaultCheckoutEnabledChainsForRail({
   paymentRail,
 }) {
   if (paymentRail === 'bitcoin') {
-    return merchantSupportsChain(merchant, 'bitcoin') ? ['bitcoin'] : []
+    return merchantSupportsChain(merchant, 'bitcoin', config)
+      ? ['bitcoin']
+      : []
   }
   const requested =
     Array.isArray(merchant?.enabledChains) && merchant.enabledChains.length
       ? merchant.enabledChains
       : Object.keys(config.chains).filter((chain) =>
-          merchantSupportsChain(merchant, chain),
+          merchantSupportsChain(merchant, chain, config),
         )
   return requested.filter(
     (chain) =>
       chainRail(chain) === paymentRail &&
-      merchantSupportsChain(merchant, chain),
+      merchantSupportsChain(merchant, chain, config),
   )
 }
 
@@ -173,7 +177,7 @@ function deriveCheckoutEnabledChains({ body, merchant, config, paymentRail }) {
   }
 
   const unique = [...new Set(requested)].filter((chain) =>
-    merchantSupportsChain(merchant, chain),
+    merchantSupportsChain(merchant, chain, config),
   )
   if (!unique.length) {
     throw new Error(

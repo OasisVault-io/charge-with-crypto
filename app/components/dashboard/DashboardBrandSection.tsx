@@ -1,19 +1,14 @@
 import { useDashboardPageContext } from './context/DashboardPageContext'
-import { normalizePaymentRail, valuesForRail } from './dashboard.shared'
 import { DashboardLogoImage } from './DashboardLogoImage'
 
 export function DashboardBrandSection() {
   const {
     activeSection,
-    appConfig,
     editingEnabled,
     merchantDraft,
     merchantStatus,
     saveMerchant,
-    setMerchantDefaultRail,
     setMerchantField,
-    syncCheckoutRail,
-    uploadLogo,
   } = useDashboardPageContext()
 
   return (
@@ -123,7 +118,7 @@ export function DashboardBrandSection() {
                       src={merchantDraft.logoUrl}
                     />
                     <label>
-                      Logo URL or uploaded image
+                      Logo URL
                       <input
                         value={merchantDraft.logoUrl}
                         onChange={(event) =>
@@ -132,20 +127,6 @@ export function DashboardBrandSection() {
                         placeholder="https://example.com/logo.png"
                       />
                     </label>
-                    <label>
-                      Upload logo
-                      <input
-                        accept="image/*"
-                        type="file"
-                        onChange={async (event) =>
-                          uploadLogo(event.target.files?.[0] || null)
-                        }
-                      />
-                    </label>
-                    <div className="helper">
-                      Uploading stores a data URL so the logo can render
-                      directly in the checkout.
-                    </div>
                   </div>
                 </div>
               </div>
@@ -186,110 +167,6 @@ export function DashboardBrandSection() {
                     {merchantDraft.checkoutDescription ||
                       'Customers connect a wallet, get one recommended route, and pay in one confirmation.'}
                   </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="dashboard-form-section">
-              <div className="section-head">
-                <div className="stack-sm">
-                  <span className="eyebrow">Defaults</span>
-                  <h3>Checkout defaults</h3>
-                </div>
-                <div className="helper">
-                  Used for direct sessions and as the starting point for stored
-                  plans.
-                </div>
-              </div>
-
-              <div className="field-stack">
-                <label>
-                  Default checkout rail
-                  <select
-                    value={merchantDraft.defaultPaymentRail}
-                    onChange={(event) => {
-                      const nextRail = normalizePaymentRail(event.target.value)
-                      const nextChains = valuesForRail(
-                        merchantDraft.enabledChains,
-                        nextRail,
-                        'chain',
-                      )
-                      setMerchantDefaultRail(nextRail)
-                      if (!nextChains.length) {
-                        syncCheckoutRail(nextRail)
-                      }
-                    }}
-                  >
-                    <option value="evm">EVM</option>
-                    <option value="bitcoin">Bitcoin</option>
-                  </select>
-                </label>
-                <div>
-                  <div className="eyebrow">Enabled networks</div>
-                  <div className="checkbox-grid">
-                    {Object.entries(appConfig.chains || {}).map(
-                      ([chain, chainConfig]) => (
-                        <label className="checkbox-pill" key={chain}>
-                          <input
-                            checked={merchantDraft.enabledChains.includes(
-                              chain,
-                            )}
-                            type="checkbox"
-                            value={chain}
-                            onChange={(event) => {
-                              const nextEnabledChains = event.target.checked
-                                ? merchantDraft.enabledChains.includes(chain)
-                                  ? merchantDraft.enabledChains
-                                  : [...merchantDraft.enabledChains, chain]
-                                : merchantDraft.enabledChains.filter(
-                                    (entry) => entry !== chain,
-                                  )
-                              setMerchantField(
-                                'enabledChains',
-                                nextEnabledChains,
-                              )
-                            }}
-                          />
-                          <span>{chainConfig.name}</span>
-                        </label>
-                      ),
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="eyebrow">Accepted assets by default</div>
-                  <div className="checkbox-grid">
-                    {Object.keys(appConfig.assets || {}).map((asset) => (
-                      <label className="checkbox-pill" key={asset}>
-                        <input
-                          checked={merchantDraft.defaultAcceptedAssets.includes(
-                            asset,
-                          )}
-                          type="checkbox"
-                          value={asset}
-                          onChange={(event) => {
-                            const nextAssets = event.target.checked
-                              ? merchantDraft.defaultAcceptedAssets.includes(
-                                  asset,
-                                )
-                                ? merchantDraft.defaultAcceptedAssets
-                                : [
-                                    ...merchantDraft.defaultAcceptedAssets,
-                                    asset,
-                                  ]
-                              : merchantDraft.defaultAcceptedAssets.filter(
-                                  (entry) => entry !== asset,
-                                )
-                            setMerchantField(
-                              'defaultAcceptedAssets',
-                              nextAssets,
-                            )
-                          }}
-                        />
-                        <span>{asset}</span>
-                      </label>
-                    ))}
-                  </div>
                 </div>
               </div>
             </section>

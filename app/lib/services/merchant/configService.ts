@@ -55,6 +55,11 @@ class ConfigService {
         sponsorAddress: '',
         derivationPath: '',
       },
+      bitcoin: {
+        addressDerivationConfigured: Boolean(
+          this.config.bitcoinPaymentXpub,
+        ),
+      },
       x402: this.x402Service?.status?.() || { enabled: false },
     }
   }

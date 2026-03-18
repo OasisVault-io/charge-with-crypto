@@ -11,7 +11,8 @@ export const dashboardTokenStorageKey = 'charge-with-crypto.dashboard-token'
 export const setupItems = [
   ['overview', 'Overview'],
   ['brand', 'Brand'],
-  ['settings', 'Webhooks & settlement'],
+  ['webhooks', 'Webhooks'],
+  ['settlement', 'Settlement'],
   ['plans', 'Plans'],
 ] as const
 

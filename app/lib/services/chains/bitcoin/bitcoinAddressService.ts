@@ -54,11 +54,21 @@ class BitcoinAddressService {
   isConfiguredForMerchant(
     merchant: BitcoinMerchant | null | undefined,
   ): boolean {
-    return Boolean(String(merchant?.bitcoinXpub || '').trim())
+    return Boolean(
+      String(this.config.bitcoinPaymentXpub || merchant?.bitcoinXpub || '').trim(),
+    )
   }
 
   async reserveDerivationIndex(merchantId: string): Promise<number> {
-    const counterId = `bitcoin_settlement_index:${merchantId}`
+    const usesGlobalXpub = Boolean(
+      String(this.config.bitcoinPaymentXpub || '').trim(),
+    )
+    const counterId = usesGlobalXpub
+      ? 'bitcoin_settlement_index:app'
+      : `bitcoin_settlement_index:${merchantId}`
+    const initialIndex = usesGlobalXpub
+      ? Number(this.config.bitcoinPaymentStartIndex || 0)
+      : 0
     const pending = this.counterLock
     let release: (() => void) | null = null
 
@@ -72,12 +82,12 @@ class BitcoinAddressService {
       const existing = this.store.getById('counters', counterId)
       if (existing) {
         const index = Number(existing.value || 0)
-        this.store.update('counters', existing.id, { value: index + 1 })
+        this.store.update('counters', counterId, { value: index + 1 })
         return index
       }
 
-      this.store.insert('counters', { id: counterId, value: 1 })
-      return 0
+      this.store.insert('counters', { id: counterId, value: initialIndex + 1 })
+      return initialIndex
     } finally {
       release?.()
     }
@@ -89,8 +99,8 @@ class BitcoinAddressService {
     if (!this.isConfiguredForMerchant(merchant)) return null
 
     const xpub = requireBitcoinXpub(
-      merchant.bitcoinXpub,
-      'bitcoinXpub',
+      this.config.bitcoinPaymentXpub || merchant.bitcoinXpub,
+      this.config.bitcoinPaymentXpub ? 'BITCOIN_PAYMENT_XPUB' : 'bitcoinXpub',
       this.config.chains.bitcoin,
     )
     const derivationIndex = await this.reserveDerivationIndex(merchant.id)

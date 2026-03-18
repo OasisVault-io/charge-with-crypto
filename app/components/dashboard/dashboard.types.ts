@@ -20,6 +20,9 @@ export type DashboardConfig = {
     derivationPath?: string
     sponsorAddress?: string
   } | null
+  bitcoin?: {
+    addressDerivationConfigured?: boolean
+  } | null
 }
 
 export type DashboardPlan = {

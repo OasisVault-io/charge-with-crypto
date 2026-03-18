@@ -21,9 +21,10 @@ import { DashboardCheckoutSection } from './DashboardCheckoutSection'
 import { DashboardOverviewSection } from './DashboardOverviewSection'
 import { DashboardPaymentsSection } from './DashboardPaymentsSection'
 import { DashboardPlansSection } from './DashboardPlansSection'
-import { DashboardSettingsSection } from './DashboardSettingsSection'
+import { DashboardSettlementSection } from './DashboardSettlementSection'
 import { DashboardSidebar } from './DashboardSidebar'
 import { DashboardTopbar } from './DashboardTopbar'
+import { DashboardWebhooksSection } from './DashboardWebhooksSection'
 import { useDashboardPageActions } from './hooks/useDashboardPageActions'
 import { useDashboardPageState } from './hooks/useDashboardPageState'
 
@@ -217,7 +218,7 @@ export function DashboardPage({
           enabledChains.length &&
           configuredRecipients === enabledChains.length,
         ),
-        section: 'settings',
+        section: 'settlement',
       },
       {
         label: 'Plans ready',
@@ -377,7 +378,8 @@ export function DashboardPage({
               <div className="dashboard-main">
                 <DashboardOverviewSection />
                 <DashboardBrandSection />
-                <DashboardSettingsSection />
+                <DashboardWebhooksSection />
+                <DashboardSettlementSection />
                 <DashboardPlansSection />
                 <DashboardCheckoutSection />
                 <DashboardPaymentsSection />

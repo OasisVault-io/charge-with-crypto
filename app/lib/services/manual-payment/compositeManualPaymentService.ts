@@ -157,6 +157,9 @@ class CompositeManualPaymentService {
       ],
       address: preferredRoute?.address || evmManual?.address || '',
       status: preferredRoute?.status || 'disabled',
+      scanState: evmManual?.scanState || {},
+      balanceSnapshot: evmManual?.balanceSnapshot || {},
+      sweepStatus: evmManual?.sweepStatus || 'idle',
       evm: evmManual,
       bitcoin: bitcoinRoute,
     }

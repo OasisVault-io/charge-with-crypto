@@ -5,12 +5,9 @@ export function DashboardOverviewSection() {
   const {
     activeSection,
     appConfig,
-    checklist,
     dashboardData,
-    merchant,
     openCheckouts,
     payments,
-    setActiveSection,
     totalConfirmedVolume,
   } = useDashboardPageContext()
   const confirmedCount = payments.filter(
@@ -44,113 +41,6 @@ export function DashboardOverviewSection() {
           <span className="eyebrow">USD processed</span>
           <div className="stat-value">{formatUsd(totalConfirmedVolume)}</div>
         </article>
-      </div>
-
-      <div className="overview-grid">
-        <article className="overview-card">
-          <span className="eyebrow">Brand</span>
-          <strong>{merchant.brandName || merchant.name || 'Merchant'}</strong>
-          <p className="muted">
-            {merchant.checkoutHeadline ||
-              'No checkout headline configured yet.'}
-          </p>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setActiveSection('brand')}
-          >
-            Open brand
-          </button>
-        </article>
-        <article className="overview-card">
-          <span className="eyebrow">Webhooks & settlement</span>
-          <strong>
-            {merchant.webhookUrl
-              ? 'Webhook configured'
-              : 'Configure operations'}
-          </strong>
-          <p className="muted">
-            {merchant.webhookUrl || 'No webhook configured yet.'}
-          </p>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setActiveSection('settings')}
-          >
-            Open settings
-          </button>
-        </article>
-        <article className="overview-card">
-          <span className="eyebrow">Plans</span>
-          <strong>
-            {merchant.plans?.length || 0} stored plan
-            {merchant.plans?.length === 1 ? '' : 's'}
-          </strong>
-          <p className="muted">
-            {(merchant.plans || [])
-              .slice(0, 3)
-              .map((plan) => `${plan.title} ${formatUsd(plan.amountUsd)}`)
-              .join(' · ') || 'Create the first plan.'}
-          </p>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setActiveSection('plans')}
-          >
-            Manage plans
-          </button>
-        </article>
-        <article className="overview-card">
-          <span className="eyebrow">Payments</span>
-          <strong>{confirmedCount} confirmed</strong>
-          <p className="muted">
-            {formatUsd(totalConfirmedVolume)} processed so far.
-          </p>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setActiveSection('payments')}
-          >
-            View payments
-          </button>
-        </article>
-        <article className="overview-card">
-          <span className="eyebrow">Checkout</span>
-          <strong>Create a session</strong>
-          <p className="muted">
-            {(merchant.defaultAcceptedAssets || []).join(' · ') ||
-              'Select accepted assets'}{' '}
-            across {(merchant.enabledChains || []).length || 0} network(s).
-          </p>
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => setActiveSection('checkout')}
-          >
-            New checkout
-          </button>
-        </article>
-      </div>
-
-      <div className="overview-checklist">
-        {checklist.map((item) => (
-          <article className="overview-check-card" key={item.label}>
-            <div className="overview-check-copy">
-              <span className={`badge ${item.ready ? 'ok' : 'warn'}`}>
-                {item.ready ? 'Ready' : 'Needs work'}
-              </span>
-              <strong>{item.label}</strong>
-              <p className="muted">{item.detail}</p>
-            </div>
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={() => setActiveSection(item.section)}
-            >
-              Open {item.section}
-            </button>
-          </article>
-        ))}
       </div>
 
       <div className="panel-header">

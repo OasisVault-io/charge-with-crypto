@@ -133,7 +133,9 @@ function manualBalanceSnapshot(
   chain: string,
   asset: string,
 ) {
-  const snapshot = manualPayment?.balanceSnapshot?.[chain]?.[asset]
+  const snapshot =
+    manualPayment?.balanceSnapshot?.[chain]?.[asset] ??
+    manualPayment?.evm?.balanceSnapshot?.[chain]?.[asset]
   if (snapshot == null || snapshot === '') return 0n
   try {
     return BigInt(String(snapshot))
@@ -619,7 +621,17 @@ class ManualPaymentService {
     }
 
     let latestCheckout = checkout
-    for (const [chain, chainQuotes] of quotesByChain.entries()) {
+    const orderedChains = [...quotesByChain.keys()].sort((a, b) => {
+      const aIndex = CHAIN_PREFERENCE.indexOf(a)
+      const bIndex = CHAIN_PREFERENCE.indexOf(b)
+      const normalizedA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex
+      const normalizedB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex
+      if (normalizedA !== normalizedB) return normalizedA - normalizedB
+      return a.localeCompare(b)
+    })
+
+    for (const chain of orderedChains) {
+      const chainQuotes = quotesByChain.get(chain) || []
       try {
         latestCheckout = await this.scanChainForCheckout(
           latestCheckout,
@@ -672,7 +684,10 @@ class ManualPaymentService {
     quotes: QuoteLike[],
   ): Promise<CheckoutLike> {
     const manualPayment = checkout.manualPayment || {}
-    const scanState = { ...(manualPayment.scanState || {}) }
+    const scanState = {
+      ...(manualPayment.evm?.scanState || {}),
+      ...(manualPayment.scanState || {}),
+    }
     const chainState = { ...(scanState[chain] || {}) }
     const provider = await this.provider(chain)
     const createdAtMs = checkoutCreatedAtMs(checkout)
@@ -736,6 +751,7 @@ class ManualPaymentService {
         ? normalizeAddress(assetConfig.addresses[chain])
         : ''
       if (!tokenAddress) continue
+      let requestedToBlock = scanToBlock
       if (typeof provider.readErc20Balance === 'function') {
         let currentBalance = null
         try {
@@ -758,6 +774,13 @@ class ManualPaymentService {
             expectedAmountBaseUnits
           )
             continue
+          // Once the balance has clearly moved, scan in small pages so a
+          // matching transfer can be found quickly without timing out on a
+          // wide historical eth_getLogs request.
+          requestedToBlock = Math.min(
+            scanToBlock,
+            fromBlock,
+          )
         }
       }
       const logResult = await this.getLogsWithRangeRecovery({
@@ -765,7 +788,7 @@ class ManualPaymentService {
         tokenAddress,
         addressTopic,
         fromBlock,
-        toBlock: scanToBlock,
+        toBlock: requestedToBlock,
         latestBlock,
         confirmedToBlock,
       })
