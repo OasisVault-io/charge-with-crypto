@@ -34,6 +34,16 @@ function eventPayload(event: EventLike) {
   })
 }
 
+function backoffMs(config: AppConfig, attempt: number) {
+  const exponent = Math.max(0, attempt - 1)
+  const maxMs = Math.max(config.webhookBackoffMs, config.webhookMaxBackoffMs)
+  return Math.min(maxMs, config.webhookBackoffMs * 2 ** exponent)
+}
+
+function nextRetryIso(config: AppConfig, attempt: number) {
+  return new Date(Date.now() + backoffMs(config, attempt)).toISOString()
+}
+
 async function deliverWebhook({
   repositories: providedRepositories,
   store,
@@ -80,8 +90,10 @@ async function deliverWebhook({
     return { delivered: true, responseCode: 200, signature }
   }
 
+  const maxAttempts = Math.max(1, config.webhookRetries + 1)
   let lastErr: Error | null = null
-  for (let attempt = 1; attempt <= config.webhookRetries; attempt += 1) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const isFinalAttempt = attempt >= maxAttempts
     try {
       const response = await requestOnce(
         endpoint,
@@ -93,15 +105,11 @@ async function deliverWebhook({
       )
       const success = response.statusCode >= 200 && response.statusCode < 300
       repositories.webhookDeliveries.update(deliveryRecord.id, {
-        status: success ? 'delivered' : 'failed',
+        status: success ? 'delivered' : isFinalAttempt ? 'failed' : 'pending',
         attempts: attempt,
         lastAttemptAt: nowIso(),
         nextRetryAt:
-          success || attempt === config.webhookRetries
-            ? null
-            : new Date(
-                Date.now() + config.webhookBackoffMs * attempt,
-              ).toISOString(),
+          success || isFinalAttempt ? null : nextRetryIso(config, attempt),
         responseCode: response.statusCode,
         responseBody: response.body,
       })
@@ -116,21 +124,16 @@ async function deliverWebhook({
     } catch (error) {
       lastErr = error instanceof Error ? error : new Error('delivery_failed')
       repositories.webhookDeliveries.update(deliveryRecord.id, {
-        status: 'failed',
+        status: isFinalAttempt ? 'failed' : 'pending',
         attempts: attempt,
         lastAttemptAt: nowIso(),
-        nextRetryAt:
-          attempt === config.webhookRetries
-            ? null
-            : new Date(
-                Date.now() + config.webhookBackoffMs * attempt,
-              ).toISOString(),
+        nextRetryAt: isFinalAttempt ? null : nextRetryIso(config, attempt),
         error: lastErr.message,
       })
     }
 
-    if (attempt < config.webhookRetries) {
-      await sleep(config.webhookBackoffMs * attempt)
+    if (!isFinalAttempt) {
+      await sleep(backoffMs(config, attempt))
     }
   }
 

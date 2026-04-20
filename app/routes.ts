@@ -32,4 +32,8 @@ export default [
   ),
   route('api/wallet/connect-intent', 'routes/api/wallet.connect-intent.ts'),
   route('api/prices/:chain/:asset', 'routes/api/prices.$chain.$asset.ts'),
+  route(
+    'api/internal/jobs/reconcile',
+    'routes/api/internal.jobs.reconcile.ts',
+  ),
 ] satisfies RouteConfig

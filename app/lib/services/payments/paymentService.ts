@@ -136,6 +136,7 @@ async function emitPaymentConfirmed({
   quote,
   payment,
   chain,
+  now,
 }: {
   repositories?: ServiceRepositories
   store?: StoreLike
@@ -144,13 +145,17 @@ async function emitPaymentConfirmed({
   quote: QuoteLike
   payment: PaymentRecord
   chain: string
+  now?: string
 }) {
   const repositories = repositoriesFrom(
     providedRepositories || (store as StoreLike),
   )
+  const createdAt = now || nowIso()
   const recipientAddress =
     checkout.recipientByChain?.[chain] || checkout.recipientAddress
   const event = repositories.events.insert({
+    createdAt,
+    updatedAt: createdAt,
     merchantId: checkout.merchantId,
     checkoutId: checkout.id,
     paymentId: payment.id,
@@ -208,9 +213,10 @@ async function confirmCheckoutIfNeeded({
   if (checkout.status === 'paid') {
     return repositories.checkouts.get(checkout.id) || checkout
   }
+  const now = nowIso()
   repositories.checkouts.update(checkout.id, {
     status: 'paid',
-    paidAt: nowIso(),
+    paidAt: now,
     paymentId: payment.id,
     paidChain: quote.chain,
     paidAsset: quote.asset,
@@ -223,6 +229,7 @@ async function confirmCheckoutIfNeeded({
     quote,
     payment,
     chain: chain || String(quote.chain || ''),
+    now,
   })
   return repositories.checkouts.get(checkout.id) || checkout
 }
@@ -446,6 +453,63 @@ async function reconcilePendingCheckoutPayments({
   return repositories.checkouts.get(checkout.id) || latestCheckout
 }
 
+type ReconcileWalletPaymentsBatchInput = {
+  repositories?: ServiceRepositories
+  store?: StoreLike
+  providers: ProviderRegistryLike
+  config: AppConfig
+  limit?: number
+}
+
+async function reconcilePendingWalletPaymentsBatch({
+  repositories: providedRepositories,
+  store,
+  providers,
+  config,
+  limit,
+}: ReconcileWalletPaymentsBatchInput) {
+  const repositories = repositoriesFrom(
+    providedRepositories || (store as StoreLike),
+  )
+  const batchSize = Math.max(1, limit ?? config.walletReconcileBatchSize ?? 50)
+  const checkouts = new Map<string, CheckoutLike>()
+  const allPayments = repositories.payments.list()
+  for (const payment of allPayments) {
+    if (payment.method !== 'onchain') continue
+    if (payment.status !== 'pending') continue
+    if (!payment.txHash) continue
+    const checkoutId = String(payment.checkoutId || '')
+    if (!checkoutId || checkouts.has(checkoutId)) continue
+    const checkout = repositories.checkouts.get(checkoutId)
+    if (!checkout || checkout.status !== 'pending') continue
+    checkouts.set(checkoutId, checkout)
+    if (checkouts.size >= batchSize) break
+  }
+
+  const ordered = [...checkouts.keys()].sort()
+  let checkoutsProcessed = 0
+  for (const checkoutId of ordered) {
+    const checkout = checkouts.get(checkoutId)
+    if (!checkout) continue
+    try {
+      await reconcilePendingCheckoutPayments({
+        repositories,
+        providers,
+        config,
+        checkout,
+      })
+      checkoutsProcessed += 1
+    } catch (error) {
+      console.error('[reconcile] wallet batch failed', {
+        checkoutId,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  return { checkoutsProcessed }
+}
+
 async function recordManualDetectedPayment({
   repositories: providedRepositories,
   store,
@@ -633,6 +697,7 @@ export {
   resetDispatchWebhookImplementation,
   verifyPaymentAndRecord,
   reconcilePendingCheckoutPayments,
+  reconcilePendingWalletPaymentsBatch,
   recordManualDetectedPayment,
   recordConfirmedExternalPayment,
   setDispatchWebhookImplementation,
@@ -675,6 +740,15 @@ class PaymentService {
       providers: this.providers,
       config: this.config,
       checkout,
+    })
+  }
+
+  async reconcilePendingWalletPaymentsBatch(limit?: number) {
+    return reconcilePendingWalletPaymentsBatch({
+      repositories: this.repositories,
+      providers: this.providers,
+      config: this.config,
+      limit,
     })
   }
 

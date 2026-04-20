@@ -1304,10 +1304,29 @@ class ManualPaymentService {
     return this.scanner.runCycle()
   }
 
+  async runScannerPass() {
+    if (!this.isConfigured()) return { processed: 0, configured: false }
+    const before = (
+      this.store.find('checkouts', (checkout) => {
+        const candidate = checkout as CheckoutLike
+        return (
+          candidate.status !== 'paid' &&
+          Boolean(candidate.manualPayment?.available)
+        )
+      }) as CheckoutLike[]
+    ).length
+    await this.runCycle()
+    return { processed: before, configured: true }
+  }
+
   async runCycleInternal() {
     if (this.running) return
     this.running = true
     try {
+      const batchSize = Math.max(
+        1,
+        this.config.manualPaymentScanBatchSize ?? 25,
+      )
       const pendingCheckouts = (
         this.store.find('checkouts', (checkout) => {
           const candidate = checkout as CheckoutLike
@@ -1316,9 +1335,11 @@ class ManualPaymentService {
             Boolean(candidate.manualPayment?.available)
           )
         }) as CheckoutLike[]
-      ).sort((a, b) =>
-        String(a.createdAt || '').localeCompare(String(b.createdAt || '')),
       )
+        .sort((a, b) =>
+          String(a.createdAt || '').localeCompare(String(b.createdAt || '')),
+        )
+        .slice(0, batchSize)
       const seenAddresses = new Set()
       for (const checkout of pendingCheckouts) {
         const manualAddress = String(
@@ -1326,15 +1347,20 @@ class ManualPaymentService {
         ).toLowerCase()
         if (manualAddress) {
           if (seenAddresses.has(manualAddress)) {
-            this.store.update('checkouts', checkout.id, {
-              manualPayment: {
-                ...(checkout.manualPayment || {}),
-                available: false,
-                status: 'disabled',
-                reason: 'duplicate_manual_address_detected',
-                updatedAt: nowIso(),
-              },
-            })
+            const latest = this.store.getById('checkouts', checkout.id) as
+              | CheckoutLike
+              | null
+            if (latest && latest.status !== 'paid') {
+              this.store.update('checkouts', checkout.id, {
+                manualPayment: {
+                  ...(latest.manualPayment || {}),
+                  available: false,
+                  status: 'disabled',
+                  reason: 'duplicate_manual_address_detected',
+                  updatedAt: nowIso(),
+                },
+              })
+            }
             continue
           }
           seenAddresses.add(manualAddress)
@@ -1342,13 +1368,18 @@ class ManualPaymentService {
         try {
           await this.reconcileCheckout(checkout)
         } catch (err) {
-          this.store.update('checkouts', checkout.id, {
-            manualPayment: {
-              ...(checkout.manualPayment || {}),
-              lastScanError: err.message,
-              lastScanAt: nowIso(),
-            },
-          })
+          const latest = this.store.getById('checkouts', checkout.id) as
+            | CheckoutLike
+            | null
+          if (latest && latest.status !== 'paid') {
+            this.store.update('checkouts', checkout.id, {
+              manualPayment: {
+                ...(latest.manualPayment || {}),
+                lastScanError: err.message,
+                lastScanAt: nowIso(),
+              },
+            })
+          }
         }
       }
       if (this.canAutoSweep()) {

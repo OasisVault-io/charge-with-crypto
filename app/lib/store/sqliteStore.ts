@@ -65,6 +65,30 @@ class SqliteStore implements StoreLike {
         `CREATE INDEX IF NOT EXISTS idx_${name}_created_at ON ${name} (created_at DESC);`,
       )
     }
+    this.ensureHotPathIndexes()
+  }
+
+  ensureHotPathIndexes() {
+    if (!this.sqlite) return
+    const statements = [
+      `CREATE INDEX IF NOT EXISTS idx_payments_checkout ON payments (json_extract(json, '$.checkoutId'));`,
+      `CREATE INDEX IF NOT EXISTS idx_payments_status ON payments (json_extract(json, '$.status'));`,
+      `CREATE INDEX IF NOT EXISTS idx_payments_tx_hash ON payments (json_extract(json, '$.txHash'));`,
+      `CREATE INDEX IF NOT EXISTS idx_quotes_checkout ON quotes (json_extract(json, '$.checkoutId'));`,
+      `CREATE INDEX IF NOT EXISTS idx_checkouts_status ON checkouts (json_extract(json, '$.status'));`,
+      `CREATE INDEX IF NOT EXISTS idx_checkouts_merchant ON checkouts (json_extract(json, '$.merchantId'));`,
+      `CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON webhook_deliveries (json_extract(json, '$.status'));`,
+      `CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_event ON webhook_deliveries (json_extract(json, '$.eventId'));`,
+      `CREATE INDEX IF NOT EXISTS idx_events_checkout ON events (json_extract(json, '$.checkoutId'));`,
+      `CREATE INDEX IF NOT EXISTS idx_events_merchant ON events (json_extract(json, '$.merchantId'));`,
+    ]
+    for (const sql of statements) {
+      try {
+        this.sqlite.exec(sql)
+      } catch (error) {
+        console.warn('Failed to create hot-path index', { sql, error })
+      }
+    }
   }
 
   table<C extends CollectionName>(name: C) {
