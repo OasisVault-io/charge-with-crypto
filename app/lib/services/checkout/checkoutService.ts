@@ -120,13 +120,40 @@ class CheckoutService {
   }
 
   async getCheckoutStatus(id: string) {
-    let checkout = this.requireCheckout(id)
-    checkout =
-      (await this.paymentService.reconcilePendingCheckoutPayments(checkout)) ||
-      checkout
-    if (this.manualPaymentService) {
-      checkout = await this.manualPaymentService.reconcileCheckout(checkout)
-    }
+    const initial = this.requireCheckout(id)
+    const timeoutMs = Math.max(
+      0,
+      this.config.checkoutStatusReconcileTimeoutMs ?? 750,
+    )
+    const reconcileWork = (async () => {
+      let latest = initial
+      try {
+        latest =
+          (await this.paymentService.reconcilePendingCheckoutPayments(latest)) ||
+          latest
+      } catch (error) {
+        console.error('[status] wallet reconcile failed', {
+          checkoutId: id,
+          message: error instanceof Error ? error.message : String(error),
+        })
+      }
+      if (this.manualPaymentService) {
+        try {
+          latest = await this.manualPaymentService.reconcileCheckout(latest)
+        } catch (error) {
+          console.error('[status] manual reconcile failed', {
+            checkoutId: id,
+            message: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+      return latest
+    })()
+    const raced = await Promise.race([
+      reconcileWork,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ])
+    const checkout = raced || this.repositories.checkouts.get(id) || initial
     const quotes = this.quoteService.getActiveQuotesForCheckout(checkout.id)
     return {
       checkout,

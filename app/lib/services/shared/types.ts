@@ -378,6 +378,7 @@ type ManualPaymentServiceLike = {
     checkout: CheckoutLike
     quotes: QuoteLike[]
   }): Promise<ManualPaymentLike>
+  runScannerPass?(): Promise<AnyRecord>
 }
 
 type BitcoinAddressServiceLike = {

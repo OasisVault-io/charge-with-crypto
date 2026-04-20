@@ -31,6 +31,7 @@ interface EvmManualPaymentServiceLike {
   }): Promise<ManualPaymentDetails>
   reconcileCheckout(checkout: CheckoutLike): Promise<CheckoutLike>
   getCheckoutDetails(checkout: CheckoutLike): Promise<ManualPaymentDetails>
+  runScannerPass?(): Promise<AnyRecord>
 }
 
 interface BitcoinManualPaymentServiceLike {
@@ -172,6 +173,13 @@ class CompositeManualPaymentService {
     if (this.bitcoinService)
       latest = await this.bitcoinService.reconcileCheckout(latest)
     return latest
+  }
+
+  async runScannerPass(): Promise<AnyRecord> {
+    if (!this.evmService?.runScannerPass) {
+      return { processed: 0, configured: false }
+    }
+    return this.evmService.runScannerPass()
   }
 
   async getCheckoutDetails(checkout: CheckoutLike): Promise<AnyRecord> {

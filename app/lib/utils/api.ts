@@ -117,4 +117,24 @@ export function requestHeader(request: Request, name: string) {
   )
 }
 
+export function requireInternalJobToken(
+  request: Request,
+  expected: string | null | undefined,
+): Response | null {
+  if (!expected) {
+    return apiError('internal_jobs_disabled', 503, 'INTERNAL_JOB_TOKEN not set')
+  }
+  const authHeader =
+    requestHeader(request, 'authorization') ||
+    requestHeader(request, 'x-internal-job-token') ||
+    ''
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : authHeader.trim()
+  if (!token || token !== expected) {
+    return apiError('unauthorized', 401)
+  }
+  return null
+}
+
 export type { AppError }
