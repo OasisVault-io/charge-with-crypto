@@ -16,6 +16,9 @@ type ManualPaymentDetails = {
   qrSvg?: string
   paymentUri?: string
   preferredQuote?: QuoteLike | null
+  scanState?: Record<string, AnyRecord>
+  balanceSnapshot?: Record<string, Record<string, string>>
+  sweepStatus?: string
 }
 
 interface EvmManualPaymentServiceLike {

@@ -86,6 +86,12 @@ type ManualPaymentLike = {
   balanceSnapshot?: Record<string, Record<string, string>>
   sweepStatus?: string
   lastScanError?: string
+  evm?: {
+    scanState?: Record<string, AnyRecord>
+    balanceSnapshot?: Record<string, Record<string, string>>
+    sweepStatus?: string
+    [key: string]: unknown
+  }
   [key: string]: unknown
 }
 
